@@ -16,6 +16,7 @@
         <div class="nav-tabs" aria-label="Page tabs">
           <button class="nav-tab active" type="button" data-view-target="main-view">Home</button>
           <button class="nav-tab" type="button" data-view-target="leaderboard-view">Leaderboard</button>
+          <button class="nav-tab" type="button" data-view-target="teams-view">Teams</button>
         </div>
         <div class="nav-player">
           <button id="player-nav-button" class="player-nav-button" type="button">
@@ -138,6 +139,24 @@
                 <tbody id="leaderboard-body"></tbody>
               </table>
             </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="teams-view" class="app-view">
+        <section class="teams-page">
+          <section class="panel">
+            <div class="section-head small">
+              <div>
+                <p class="eyebrow">Tournament teams</p>
+                <h2>Teams</h2>
+              </div>
+              <div class="team-view-tabs" aria-label="Team view selector">
+                <button class="team-view-tab active" type="button" data-team-view="groups">Group stage</button>
+                <button class="team-view-tab" type="button" data-team-view="knockout">Knockout</button>
+              </div>
+            </div>
+            <div id="teams-content" class="teams-content"></div>
           </section>
         </section>
       </section>

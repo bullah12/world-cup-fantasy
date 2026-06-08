@@ -389,6 +389,11 @@ h3 {
   max-width: 900px;
 }
 
+.teams-page {
+  margin: 0 auto;
+  max-width: 1100px;
+}
+
 .section-head {
   align-items: end;
   display: flex;
@@ -926,6 +931,84 @@ th {
   white-space: nowrap;
 }
 
+.team-view-tabs {
+  background: #e7ede5;
+  border-radius: 8px;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.team-view-tab {
+  background: transparent;
+  color: var(--accent-dark);
+  padding: 0.55rem 0.75rem;
+}
+
+.team-view-tab:hover,
+.team-view-tab.active {
+  background: #fff;
+  color: var(--accent-dark);
+}
+
+.teams-content {
+  margin-top: 1rem;
+}
+
+.team-group-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.team-group-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.team-group-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.team-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.team-card {
+  align-items: center;
+  background: #f8faf6;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+}
+
+.team-card strong {
+  font-size: 0.92rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knockout-empty {
+  background: #f8faf6;
+  border: 1px dashed #c8d0c5;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  text-align: center;
+}
+
 .form-strip {
   display: flex;
   gap: 0.25rem;
@@ -1320,6 +1403,10 @@ th {
     text-align: center;
     width: 100%;
   }
+
+  .team-group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 620px) {
@@ -1380,6 +1467,18 @@ th {
   .prediction-panel-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .team-view-tabs {
+    width: 100%;
+  }
+
+  .team-view-tab {
+    flex: 1 1 0;
+  }
+
+  .team-group-grid {
+    grid-template-columns: 1fr;
   }
 
   .prediction-form,

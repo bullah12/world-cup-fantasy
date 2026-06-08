@@ -910,6 +910,7 @@ let viewedPredictionPlayerId = activePlayerId;
 let selectedMatchDateKey = "";
 let adminUnlocked = false;
 let countdownMatchId = "";
+let selectedTeamView = "groups";
 
 const els = {
   playerForm: document.querySelector("#player-form"),
@@ -930,6 +931,8 @@ const els = {
   matchTemplate: document.querySelector("#match-row-template"),
   leaderboardBody: document.querySelector("#leaderboard-body"),
   leaderboardCount: document.querySelector("#leaderboard-count"),
+  teamViewTabs: document.querySelectorAll(".team-view-tab"),
+  teamsContent: document.querySelector("#teams-content"),
   pointsBreakdownList: document.querySelector("#points-breakdown-list"),
   predictionTotal: document.querySelector("#prediction-total"),
   predictionPlayerSelect: document.querySelector("#prediction-player-select"),
@@ -972,6 +975,13 @@ els.modalLoginPlayer.addEventListener("click", () => {
 els.viewControls.forEach((control) => {
   control.addEventListener("click", () => {
     showView(control.dataset.viewTarget);
+  });
+});
+
+els.teamViewTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    selectedTeamView = tab.dataset.teamView;
+    renderTeams();
   });
 });
 
@@ -1433,6 +1443,7 @@ function render() {
   renderSummary();
   renderMatches();
   renderLeaderboard();
+  renderTeams();
   renderPointsBreakdown();
   renderPlayerPredictions();
   renderAdminAccess();
@@ -1801,6 +1812,70 @@ function renderLeaderboard() {
       `,
     )
     .join("") || `<tr><td colspan="5" class="muted">No players yet.</td></tr>`;
+}
+
+function renderTeams() {
+  els.teamViewTabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.teamView === selectedTeamView);
+  });
+
+  els.teamsContent.innerHTML = selectedTeamView === "groups"
+    ? groupStageTeamsHtml()
+    : knockoutTeamsHtml();
+}
+
+function groupStageTeamsHtml() {
+  const groups = getGroupStageTeams();
+  return `
+    <div class="team-group-grid">
+      ${groups.map(([group, teams]) => `
+        <section class="team-group-card">
+          <div class="team-group-head">
+            <h3>${escapeHtml(group)}</h3>
+            <span class="pill">${teams.length} teams</span>
+          </div>
+          <div class="team-list">
+            ${teams.map((team) => teamCardHtml(team)).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function knockoutTeamsHtml() {
+  return `
+    <section class="knockout-empty">
+      <p class="eyebrow">Knockout stage</p>
+      <h3>Knockout teams will appear here later.</h3>
+      <p class="muted">This view will be filled once the tournament has officially started and the qualified teams are known.</p>
+    </section>
+  `;
+}
+
+function getGroupStageTeams() {
+  const groups = new Map();
+  MATCHES
+    .filter((match) => /^Group [A-L]$/.test(match.group))
+    .forEach((match) => {
+      [match.home, match.away].forEach((team) => {
+        if (!groups.has(match.group)) groups.set(match.group, new Set());
+        groups.get(match.group).add(team);
+      });
+    });
+
+  return [...groups.entries()]
+    .sort(([groupA], [groupB]) => groupA.localeCompare(groupB, undefined, { numeric: true }))
+    .map(([group, teams]) => [group, [...teams].sort((a, b) => a.localeCompare(b))]);
+}
+
+function teamCardHtml(team) {
+  return `
+    <article class="team-card">
+      ${teamFlagHtml(team)}
+      <strong>${escapeHtml(team)}</strong>
+    </article>
+  `;
 }
 
 function renderPointsBreakdown() {
