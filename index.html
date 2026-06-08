@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fantasy World Cup 2026</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav>
+        <div class="brand">
+          <span class="brand-mark">2026</span>
+          <span>Fantasy World Cup</span>
+        </div>
+        <div class="nav-tabs" aria-label="Page tabs">
+          <button class="nav-tab active" type="button" data-view-target="main-view">Home</button>
+          <button class="nav-tab" type="button" data-view-target="admin-view">Admin</button>
+        </div>
+        <div class="nav-player">
+          <button id="player-nav-button" class="player-nav-button" type="button">
+            <span id="player-nav-label">Create player</span>
+            <strong id="active-player-name"></strong>
+          </button>
+        </div>
+      </nav>
+      <section class="hero-grid">
+        <div>
+          <p class="eyebrow">Family and friends World Cup fantasy</p>
+          <h1>Welcome to Fantasy World Cup 2026.</h1>
+          <p class="intro">
+            Create your player, predict match scores, and climb the family leaderboard.
+            Get your winners right, chase perfect scores, and stay in the running for
+            some great prizes.
+          </p>
+          <div class="hero-points">
+            <span>Predict before kick-off</span>
+            <span>Score points for accuracy</span>
+            <span>Compete for prizes</span>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <div id="player-modal" class="modal-backdrop" hidden>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
+        <div class="section-head small">
+          <h2 id="player-modal-title">Player access</h2>
+          <button id="close-player-modal" class="secondary icon-button" type="button" aria-label="Close">&times;</button>
+        </div>
+        <section class="existing-player-panel">
+          <h3>Existing player</h3>
+          <div class="modal-login-row">
+            <select id="modal-player-select" aria-label="Existing player"></select>
+            <button id="modal-login-player" type="button">Log in</button>
+          </div>
+        </section>
+        <form id="player-form" class="player-modal-form">
+          <h3>Create new player</h3>
+          <label for="player-username">
+            Username
+            <input id="player-username" name="player-username" autocomplete="username" required />
+          </label>
+          <label for="player-display-name">
+            Display name
+            <input id="player-display-name" name="player-display-name" autocomplete="name" required />
+          </label>
+          <button type="submit">Create player</button>
+          <p id="created-player" class="muted"></p>
+        </form>
+      </section>
+    </div>
+
+    <main>
+      <section id="main-view" class="app-view active">
+        <section class="layout">
+          <div class="content-stack">
+            <section class="section-head">
+              <div>
+                <p class="eyebrow">Make your picks</p>
+                <h2>Upcoming matches</h2>
+              </div>
+              <p id="active-player-summary" class="muted">Create or select your player, then predict each score before the one-hour lockout.</p>
+            </section>
+            <section id="next-matches" class="next-matches panel"></section>
+            <div id="match-day-tabs" class="match-day-tabs" aria-label="Match day selector"></div>
+            <div id="matches" class="match-grid"></div>
+          </div>
+
+          <aside class="side-stack">
+            <section id="leaderboard" class="panel">
+              <div class="section-head small">
+                <h2>Leaderboard</h2>
+                <span id="leaderboard-count" class="pill"></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Player</th>
+                      <th>Pts</th>
+                      <th>Correct</th>
+                      <th>Form</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leaderboard-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="prediction-panel-head">
+                <div>
+                  <h2>Player predictions</h2>
+                  <p class="muted">View any player's predictions individually.</p>
+                </div>
+                <label class="prediction-player-picker" for="prediction-player-select">
+                  <span class="visually-hidden">Viewing player</span>
+                  <select id="prediction-player-select"></select>
+                </label>
+              </div>
+              <div class="prediction-total-row">
+                <span>Total points</span>
+                <strong id="prediction-total" class="points-total">0</strong>
+              </div>
+              <div id="player-predictions" class="prediction-list"></div>
+            </section>
+          </aside>
+        </section>
+      </section>
+
+      <section id="admin-view" class="app-view">
+        <section id="admin-login" class="panel admin-login">
+          <h2>Admin access</h2>
+          <p class="muted">Sign in with your Supabase admin account to manage users, results, and scoring parameters.</p>
+          <form id="admin-login-form" class="inline-form">
+            <label for="admin-email">
+              Email
+              <input id="admin-email" type="email" autocomplete="username" required />
+            </label>
+            <label for="admin-password">
+              Password
+              <input id="admin-password" type="password" autocomplete="current-password" required />
+            </label>
+            <button type="submit">Unlock</button>
+          </form>
+          <p id="admin-login-message" class="lock-message"></p>
+        </section>
+
+        <section id="admin-content" class="admin-content" hidden>
+          <section class="layout admin-layout">
+            <section class="panel">
+              <div class="section-head small">
+                <h2>Results admin</h2>
+                <span class="pill">Local app</span>
+              </div>
+              <p class="muted">
+                Enter final scores here after matches finish. The leaderboard recalculates automatically.
+              </p>
+              <div id="results-admin" class="admin-list"></div>
+            </section>
+
+            <div class="side-stack">
+              <section class="panel">
+                <h2>Scoring parameters</h2>
+                <div id="scoring-config" class="config-grid"></div>
+                <button id="save-config">Save scoring</button>
+              </section>
+
+              <section class="panel">
+                <h2>Delete users</h2>
+                <p class="muted">Deleting a user also removes all of their saved predictions.</p>
+                <div id="users-admin" class="admin-list"></div>
+              </section>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <template id="match-row-template">
+      <article class="match-row">
+        <time class="match-time"></time>
+        <form class="prediction-form">
+          <span class="team home-label"></span>
+          <label class="score-input">
+            <span class="visually-hidden">Home score</span>
+            <input type="number" min="0" max="30" name="homeScore" required />
+          </label>
+          <span class="score-divider">-</span>
+          <label class="score-input">
+            <span class="visually-hidden">Away score</span>
+            <input type="number" min="0" max="30" name="awayScore" required />
+          </label>
+          <span class="team away-label"></span>
+        </form>
+        <p class="match-extra">
+          <span class="match-group"></span>
+          <span class="venue"></span>
+          <span class="lock-message"></span>
+        </p>
+      </article>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

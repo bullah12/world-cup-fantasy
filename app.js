@@ -1,0 +1,1321 @@
+const DEFAULT_CONFIG = {
+  lockMinutesBeforeKickoff: 60,
+  points: {
+    exactScore: 5,
+    correctOutcome: 2,
+    correctGoalDifferenceBonus: 1,
+    correctTeamGoalsBonus: 1,
+  },
+};
+
+const SUPABASE_URL = "https://lxawkhvkhbcdpermvqbc.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4YXdraHZraGJjZHBlcm12cWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzMxMjIsImV4cCI6MjA5NjQ0OTEyMn0.nr4Xn2Phw8XNXJai99WUpjJgopL7rIxa1oBEo5ZWmJw";
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const MATCHES = [
+  {
+    id: "M001",
+    group: "Group A",
+    home: "Mexico",
+    away: "South Africa",
+    kickoff: "2026-06-11T13:00:00-06:00",
+    venue: "Mexico City Stadium, Mexico City",
+  },
+  {
+    id: "M002",
+    group: "Group B",
+    home: "Canada",
+    away: "Qatar",
+    kickoff: "2026-06-12T15:00:00-07:00",
+    venue: "BC Place, Vancouver",
+  },
+  {
+    id: "M003",
+    group: "Group A",
+    home: "Uruguay",
+    away: "Norway",
+    kickoff: "2026-06-12T18:00:00-05:00",
+    venue: "Guadalajara Stadium, Guadalajara",
+  },
+  {
+    id: "M004",
+    group: "Group B",
+    home: "Switzerland",
+    away: "Bosnia and Herzegovina",
+    kickoff: "2026-06-13T12:00:00-04:00",
+    venue: "BMO Field, Toronto",
+  },
+  {
+    id: "M005",
+    group: "Group C",
+    home: "Brazil",
+    away: "Haiti",
+    kickoff: "2026-06-13T15:00:00-04:00",
+    venue: "Hard Rock Stadium, Miami",
+  },
+  {
+    id: "M006",
+    group: "Group C",
+    home: "Morocco",
+    away: "Scotland",
+    kickoff: "2026-06-13T18:00:00-04:00",
+    venue: "Gillette Stadium, Boston",
+  },
+  {
+    id: "M007",
+    group: "Group D",
+    home: "United States",
+    away: "Paraguay",
+    kickoff: "2026-06-14T15:00:00-07:00",
+    venue: "SoFi Stadium, Los Angeles",
+  },
+  {
+    id: "M008",
+    group: "Group L",
+    home: "England",
+    away: "Croatia",
+    kickoff: "2026-06-17T15:00:00-05:00",
+    venue: "AT&T Stadium, Arlington",
+  },
+  {
+    id: "M009",
+    group: "Group L",
+    home: "England",
+    away: "Ghana",
+    kickoff: "2026-06-22T16:00:00-04:00",
+    venue: "Gillette Stadium, Boston",
+  },
+  {
+    id: "M010",
+    group: "Group L",
+    home: "Panama",
+    away: "England",
+    kickoff: "2026-06-27T17:00:00-04:00",
+    venue: "MetLife Stadium, New York New Jersey",
+  },
+  {
+    id: "R3201",
+    group: "Round of 32",
+    home: "2A",
+    away: "2B",
+    kickoff: "2026-06-28T15:00:00-04:00",
+    venue: "Knockout venue TBD",
+  },
+  {
+    id: "FINAL",
+    group: "Final",
+    home: "Finalist 1",
+    away: "Finalist 2",
+    kickoff: "2026-07-19T15:00:00-04:00",
+    venue: "New York New Jersey Stadium",
+  },
+];
+
+const TEAM_FLAG_CODES = {
+  "Bosnia and Herzegovina": "ba",
+  Brazil: "br",
+  Canada: "ca",
+  Croatia: "hr",
+  England: "gb-eng",
+  Ghana: "gh",
+  Haiti: "ht",
+  Mexico: "mx",
+  Morocco: "ma",
+  Norway: "no",
+  Panama: "pa",
+  Paraguay: "py",
+  Qatar: "qa",
+  Scotland: "gb-sct",
+  "South Africa": "za",
+  Switzerland: "ch",
+  Uruguay: "uy",
+  "United States": "us",
+};
+
+const STORAGE_KEY = "fantasyWorldCup2026";
+const MATCH_DATE_MIN = "2026-06-01";
+const MATCH_DATE_MAX = "2026-08-31";
+
+const state = loadState();
+let matchesData = [...MATCHES];
+let activePlayerId = state.activePlayerId || "";
+let viewedPredictionPlayerId = activePlayerId;
+let selectedMatchDateKey = "";
+let adminUnlocked = false;
+
+const els = {
+  playerForm: document.querySelector("#player-form"),
+  playerUsername: document.querySelector("#player-username"),
+  playerDisplayName: document.querySelector("#player-display-name"),
+  createdPlayer: document.querySelector("#created-player"),
+  playerNavButton: document.querySelector("#player-nav-button"),
+  playerNavLabel: document.querySelector("#player-nav-label"),
+  activePlayerName: document.querySelector("#active-player-name"),
+  playerModal: document.querySelector("#player-modal"),
+  closePlayerModal: document.querySelector("#close-player-modal"),
+  modalPlayerSelect: document.querySelector("#modal-player-select"),
+  modalLoginPlayer: document.querySelector("#modal-login-player"),
+  activeSummary: document.querySelector("#active-player-summary"),
+  nextMatches: document.querySelector("#next-matches"),
+  matchDayTabs: document.querySelector("#match-day-tabs"),
+  matches: document.querySelector("#matches"),
+  matchTemplate: document.querySelector("#match-row-template"),
+  leaderboardBody: document.querySelector("#leaderboard-body"),
+  leaderboardCount: document.querySelector("#leaderboard-count"),
+  predictionTotal: document.querySelector("#prediction-total"),
+  predictionPlayerSelect: document.querySelector("#prediction-player-select"),
+  playerPredictions: document.querySelector("#player-predictions"),
+  resultsAdmin: document.querySelector("#results-admin"),
+  scoringConfig: document.querySelector("#scoring-config"),
+  saveConfig: document.querySelector("#save-config"),
+  navTabs: document.querySelectorAll(".nav-tab"),
+  adminLogin: document.querySelector("#admin-login"),
+  adminContent: document.querySelector("#admin-content"),
+  adminLoginForm: document.querySelector("#admin-login-form"),
+  adminEmail: document.querySelector("#admin-email"),
+  adminPassword: document.querySelector("#admin-password"),
+  adminLoginMessage: document.querySelector("#admin-login-message"),
+  usersAdmin: document.querySelector("#users-admin"),
+};
+
+els.predictionPlayerSelect.addEventListener("change", () => {
+  viewedPredictionPlayerId = els.predictionPlayerSelect.value;
+  renderPlayerPredictions();
+});
+
+els.playerNavButton.addEventListener("click", () => {
+  openPlayerModal();
+});
+
+els.closePlayerModal.addEventListener("click", closePlayerModal);
+
+els.playerModal.addEventListener("click", (event) => {
+  if (event.target === els.playerModal) closePlayerModal();
+});
+
+els.modalLoginPlayer.addEventListener("click", () => {
+  const playerId = els.modalPlayerSelect.value;
+  if (!playerId || !state.players[playerId]) return;
+  setActivePlayer(playerId);
+  closePlayerModal();
+});
+
+els.navTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    showView(tab.dataset.viewTarget);
+  });
+});
+
+els.adminLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  els.adminLoginMessage.textContent = "Checking admin access...";
+
+  try {
+    if (!supabaseClient) throw new Error("Supabase is not available.");
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: els.adminEmail.value.trim(),
+      password: els.adminPassword.value,
+    });
+    if (error) throw error;
+
+    const isAdmin = await checkAdminAccess();
+    if (!isAdmin) {
+      await supabaseClient.auth.signOut();
+      throw new Error("This account is not listed as an admin.");
+    }
+
+    adminUnlocked = true;
+    els.adminEmail.value = "";
+    els.adminPassword.value = "";
+    els.adminLoginMessage.textContent = "";
+    render();
+  } catch (error) {
+    adminUnlocked = false;
+    els.adminLoginMessage.textContent = error.message || "Admin sign in failed.";
+  }
+});
+
+els.playerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const username = els.playerUsername.value.trim();
+  const displayName = els.playerDisplayName.value.trim();
+  if (!username || !displayName) return;
+  const playerId = createPlayerId(username);
+
+  if (findExistingPlayerId(playerId)) {
+    els.createdPlayer.textContent = "That username is already taken. Choose a different name.";
+    return;
+  }
+
+  const player = {
+    id: playerId,
+    username,
+    name: displayName,
+    createdAt: new Date().toISOString(),
+  };
+
+  state.players[player.id] = player;
+  try {
+    await savePlayer(player);
+  } catch (error) {
+    delete state.players[player.id];
+    els.createdPlayer.textContent = error.message || "Could not create player.";
+    renderModalPlayerOptions();
+    return;
+  }
+
+  setActivePlayer(player.id);
+  els.createdPlayer.textContent = "";
+  els.playerUsername.value = "";
+  els.playerDisplayName.value = "";
+  closePlayerModal();
+});
+
+els.saveConfig.addEventListener("click", async () => {
+  const nextPoints = {};
+  els.scoringConfig.querySelectorAll("input").forEach((input) => {
+    const value = Number(input.value);
+    if (input.name === "lockMinutesBeforeKickoff") {
+      state.config.lockMinutesBeforeKickoff = Number.isFinite(value) ? value : DEFAULT_CONFIG.lockMinutesBeforeKickoff;
+      return;
+    }
+    nextPoints[input.name] = Number.isFinite(value) ? value : 0;
+  });
+  state.config.points = nextPoints;
+  await saveSettings();
+  saveState();
+  render();
+});
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return normalizeState({});
+
+  try {
+    return normalizeState(JSON.parse(saved));
+  } catch {
+    return normalizeState({});
+  }
+}
+
+function normalizeState(value) {
+  const players = value.players || {};
+  Object.values(players).forEach((player) => {
+    player.username = player.username || player.id;
+    player.name = player.name || player.username || player.id;
+  });
+
+  return {
+    players,
+    predictions: value.predictions || {},
+    results: value.results || {},
+    activePlayerId: value.activePlayerId || "",
+    config: {
+      ...DEFAULT_CONFIG,
+      ...(value.config || {}),
+      points: {
+        ...DEFAULT_CONFIG.points,
+        ...((value.config && value.config.points) || {}),
+      },
+    },
+  };
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    activePlayerId: state.activePlayerId,
+    config: state.config,
+  }));
+}
+
+async function initializeApp() {
+  render();
+  if (!supabaseClient) {
+    els.activeSummary.textContent = "Supabase client could not load. Using local browser data only.";
+    return;
+  }
+
+  try {
+    await loadSupabaseState();
+    adminUnlocked = await checkAdminAccess();
+    setupRealtimeSync();
+  } catch (error) {
+    console.error(error);
+    els.activeSummary.textContent = "Could not load Supabase data. Check your project tables and connection.";
+  }
+  render();
+}
+
+async function checkAdminAccess() {
+  if (!supabaseClient) return false;
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  if (!sessionData.session) return false;
+
+  const { data, error } = await supabaseClient
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", sessionData.session.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+async function loadSupabaseState() {
+  await seedSupabaseDefaults();
+
+  const [players, matches, predictions, results, settings] = await Promise.all([
+    supabaseSelect("players"),
+    supabaseSelect("matches"),
+    supabaseSelect("predictions"),
+    supabaseSelect("results"),
+    supabaseSelect("app_settings"),
+  ]);
+
+  state.players = Object.fromEntries(players.map((player) => [
+    player.id,
+    {
+      id: player.id,
+      username: player.username,
+      name: player.display_name,
+      createdAt: player.created_at,
+    },
+  ]));
+
+  matchesData = matches.length ? matches.map(matchFromRow).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff)) : [...MATCHES];
+
+  state.predictions = Object.fromEntries(predictions.map((prediction) => [
+    predictionKey(prediction.player_id, prediction.match_id),
+    {
+      playerId: prediction.player_id,
+      matchId: prediction.match_id,
+      homeScore: prediction.home_score,
+      awayScore: prediction.away_score,
+      updatedAt: prediction.updated_at,
+    },
+  ]));
+
+  state.results = Object.fromEntries(results.map((result) => [
+    result.match_id,
+    {
+      matchId: result.match_id,
+      homeScore: result.home_score,
+      awayScore: result.away_score,
+      updatedAt: result.updated_at,
+    },
+  ]));
+
+  const scoringSetting = settings.find((setting) => setting.key === "scoring_config");
+  if (scoringSetting?.value) {
+    state.config = normalizeState({ config: scoringSetting.value }).config;
+  }
+
+  if (activePlayerId && !state.players[activePlayerId]) {
+    activePlayerId = "";
+    state.activePlayerId = "";
+    viewedPredictionPlayerId = "";
+    saveState();
+  }
+}
+
+async function seedSupabaseDefaults() {
+  const { count, error } = await supabaseClient
+    .from("matches")
+    .select("id", { count: "exact", head: true });
+  if (error) throw error;
+
+  if (count === 0) {
+    await supabaseUpsert("matches", MATCHES.map(matchToRow));
+  }
+
+  const { data: setting, error: settingError } = await supabaseClient
+    .from("app_settings")
+    .select("key")
+    .eq("key", "scoring_config")
+    .maybeSingle();
+  if (settingError) throw settingError;
+
+  if (!setting) {
+    await saveSettings();
+  }
+}
+
+async function supabaseSelect(table) {
+  const { data, error } = await supabaseClient.from(table).select("*");
+  if (error) throw error;
+  return data || [];
+}
+
+async function supabaseUpsert(table, payload, options = {}) {
+  if (Array.isArray(payload) && payload.length === 0) return;
+  const { error } = await supabaseClient.from(table).upsert(payload, options);
+  if (error) throw error;
+}
+
+async function savePlayer(player) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.from("players").insert({
+    id: player.id,
+    username: player.username,
+    display_name: player.name,
+  });
+  if (error) {
+    if (error.code === "23505") throw new Error("That username is already taken. Choose a different name.");
+    throw error;
+  }
+}
+
+async function saveSettings() {
+  if (!supabaseClient) return;
+  await supabaseUpsert("app_settings", {
+    key: "scoring_config",
+    value: state.config,
+  });
+}
+
+async function savePrediction(prediction) {
+  if (!supabaseClient) return;
+  await supabaseUpsert("predictions", {
+    player_id: prediction.playerId,
+    match_id: prediction.matchId,
+    home_score: prediction.homeScore,
+    away_score: prediction.awayScore,
+    updated_at: prediction.updatedAt,
+  });
+}
+
+async function deletePrediction(playerId, matchId) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient
+    .from("predictions")
+    .delete()
+    .eq("player_id", playerId)
+    .eq("match_id", matchId);
+  if (error) throw error;
+}
+
+async function saveResult(result) {
+  if (!supabaseClient) return;
+  await supabaseUpsert("results", {
+    match_id: result.matchId,
+    home_score: result.homeScore,
+    away_score: result.awayScore,
+    updated_at: result.updatedAt,
+  });
+}
+
+async function deletePlayerFromSupabase(playerId) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.from("players").delete().eq("id", playerId);
+  if (error) throw error;
+}
+
+function setupRealtimeSync() {
+  supabaseClient
+    .channel("fantasy-world-cup-sync")
+    .on("postgres_changes", { event: "*", schema: "public", table: "players" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "predictions" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "results" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, refreshFromSupabase)
+    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, refreshFromSupabase)
+    .subscribe();
+}
+
+let refreshTimer = 0;
+function refreshFromSupabase() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => {
+    await loadSupabaseState();
+    render();
+  }, 250);
+}
+
+function matchToRow(match) {
+  return {
+    id: match.id,
+    group_name: match.group,
+    home_team: match.home,
+    away_team: match.away,
+    kickoff: match.kickoff,
+    venue: match.venue,
+  };
+}
+
+function matchFromRow(row) {
+  return {
+    id: row.id,
+    group: row.group_name,
+    home: row.home_team,
+    away: row.away_team,
+    kickoff: row.kickoff,
+    venue: row.venue,
+  };
+}
+
+function createPlayerId(name) {
+  return name.trim();
+}
+
+function openPlayerModal() {
+  els.createdPlayer.textContent = "";
+  renderModalPlayerOptions();
+  els.playerModal.hidden = false;
+  els.playerUsername.focus();
+}
+
+function closePlayerModal() {
+  els.playerModal.hidden = true;
+}
+
+function setActivePlayer(playerId) {
+  activePlayerId = playerId;
+  viewedPredictionPlayerId = playerId;
+  state.activePlayerId = playerId;
+  saveState();
+  render();
+}
+
+function renderModalPlayerOptions() {
+  const players = Object.values(state.players).sort((a, b) => a.name.localeCompare(b.name));
+  if (players.length === 0) {
+    els.modalPlayerSelect.innerHTML = `<option>No players yet</option>`;
+    els.modalPlayerSelect.disabled = true;
+    els.modalLoginPlayer.disabled = true;
+    return;
+  }
+
+  els.modalPlayerSelect.innerHTML = players
+    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`)
+    .join("");
+  els.modalPlayerSelect.value = activePlayerId && state.players[activePlayerId] ? activePlayerId : players[0]?.id || "";
+  els.modalPlayerSelect.disabled = false;
+  els.modalLoginPlayer.disabled = false;
+}
+
+function findExistingPlayerId(playerId) {
+  const normalized = playerId.trim().toLowerCase();
+  return Object.keys(state.players).find((id) => id.toLowerCase() === normalized);
+}
+
+function render() {
+  renderSummary();
+  renderMatches();
+  renderLeaderboard();
+  renderPlayerPredictions();
+  renderAdminAccess();
+  renderResultsAdmin();
+  renderConfig();
+  renderUsersAdmin();
+}
+
+function showView(viewId) {
+  document.querySelectorAll(".app-view").forEach((view) => {
+    view.classList.toggle("active", view.id === viewId);
+  });
+  els.navTabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.viewTarget === viewId);
+  });
+}
+
+function renderAdminAccess() {
+  els.adminLogin.hidden = adminUnlocked;
+  els.adminContent.hidden = !adminUnlocked;
+}
+
+function renderSummary() {
+  const player = state.players[activePlayerId];
+  els.activeSummary.textContent = player
+    ? `Predicting as ${player.name} (${player.id}).`
+    : "Create or select your player, then predict each score before the one-hour lockout.";
+  els.playerNavLabel.textContent = player ? "" : "Create player";
+  els.activePlayerName.textContent = player ? player.name : "";
+  els.playerNavButton.classList.toggle("has-player", Boolean(player));
+}
+
+function renderMatches() {
+  els.matches.innerHTML = "";
+  const fixtures = matchesData
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+
+  const groupedMatches = groupMatchesByDate(fixtures);
+  const closestDateKey = getClosestUpcomingDateKey(groupedMatches);
+
+  if (Object.keys(groupedMatches).length === 0) {
+    els.nextMatches.innerHTML = `<p class="muted">No upcoming matches.</p>`;
+  } else {
+    renderNextMatchesSummary(groupedMatches);
+  }
+
+  if (!selectedMatchDateKey) {
+    selectedMatchDateKey = closestDateKey || MATCH_DATE_MIN;
+  }
+  selectedMatchDateKey = clampDateKey(selectedMatchDateKey);
+
+  renderMatchDateNavigator(groupedMatches);
+  renderSelectedMatchDay(selectedMatchDateKey, groupedMatches[selectedMatchDateKey] || []);
+}
+
+function renderMatchRow(match) {
+    const card = els.matchTemplate.content.firstElementChild.cloneNode(true);
+    const kickoff = new Date(match.kickoff);
+    const prediction = getPrediction(activePlayerId, match.id);
+    const locked = isLocked(match);
+
+    card.classList.toggle("locked", locked);
+    card.querySelector(".match-time").textContent = formatTime(kickoff);
+    card.querySelector(".match-time").dateTime = match.kickoff;
+    card.querySelector(".match-group").textContent = match.group;
+    card.querySelector(".venue").textContent = match.venue;
+    card.querySelector(".home-label").innerHTML = teamHtml(match.home);
+    card.querySelector(".away-label").innerHTML = teamHtml(match.away);
+
+    const form = card.querySelector("form");
+    form.dataset.matchId = match.id;
+    form.homeScore.value = prediction ? prediction.homeScore : "";
+    form.awayScore.value = prediction ? prediction.awayScore : "";
+    form.homeScore.disabled = locked || !activePlayerId;
+    form.awayScore.disabled = locked || !activePlayerId;
+    form.addEventListener("submit", (event) => event.preventDefault());
+    form.addEventListener("input", handlePredictionInput);
+
+    const lockMessage = card.querySelector(".lock-message");
+    if (!activePlayerId) {
+      lockMessage.textContent = "Create or select a player to predict this match.";
+    } else if (locked) {
+      lockMessage.textContent = "Predictions are locked for this match.";
+    } else if (prediction) {
+      lockMessage.textContent = `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`;
+    } else {
+      lockMessage.textContent = `Locks ${state.config.lockMinutesBeforeKickoff} minutes before kick-off.`;
+    }
+
+    return card;
+}
+
+function renderNextMatchesSummary(groupedMatches) {
+  const closestDateKey = getClosestUpcomingDateKey(groupedMatches) || Object.keys(groupedMatches)[0];
+  const matches = groupedMatches[closestDateKey];
+  const heading = isTodayKey(closestDateKey) ? "Today's matches" : "Next matches";
+
+  els.nextMatches.innerHTML = `
+    <div class="next-matches-head">
+      <div>
+        <p class="eyebrow">${heading}</p>
+        <h3>${formatDateHeading(new Date(matches[0].kickoff))}</h3>
+      </div>
+      <button class="secondary" type="button" id="jump-next-day">View day</button>
+    </div>
+    <div class="next-match-list">
+      ${matches.map((match) => `
+        <button class="next-match-chip" type="button" data-date-key="${closestDateKey}">
+          <span>${formatTime(new Date(match.kickoff))}</span>
+          <strong>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  els.nextMatches.querySelector("#jump-next-day").addEventListener("click", () => {
+    selectedMatchDateKey = closestDateKey;
+    renderMatches();
+  });
+  els.nextMatches.querySelectorAll(".next-match-chip").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedMatchDateKey = button.dataset.dateKey;
+      renderMatches();
+    });
+  });
+}
+
+function renderMatchDateNavigator(groupedMatches) {
+  const selectedDate = parseDateKey(selectedMatchDateKey);
+  const matches = groupedMatches[selectedMatchDateKey] || [];
+  const previousDateKey = shiftDateKey(selectedMatchDateKey, -1);
+  const nextDateKey = shiftDateKey(selectedMatchDateKey, 1);
+
+  els.matchDayTabs.innerHTML = `
+    <button class="day-step" type="button" data-direction="-1" ${previousDateKey ? "" : "disabled"} aria-label="Previous day">‹</button>
+    <div class="day-tab active">
+      <span>${formatTabDate(selectedDate)}</span>
+      <small>${matches.length} match${matches.length === 1 ? "" : "es"}</small>
+    </div>
+    <button class="day-step" type="button" data-direction="1" ${nextDateKey ? "" : "disabled"} aria-label="Next day">›</button>
+  `;
+
+  els.matchDayTabs.querySelectorAll(".day-step").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedMatchDateKey = shiftDateKey(selectedMatchDateKey, Number(button.dataset.direction)) || selectedMatchDateKey;
+      renderMatches();
+    });
+  });
+}
+
+function renderSelectedMatchDay(dateKey, matches) {
+  const dayPanel = document.createElement("section");
+  dayPanel.className = "match-day panel";
+  dayPanel.innerHTML = `
+    <div class="match-day-head">
+      <div>
+        <p class="eyebrow">${dateKey}</p>
+        <h3>${formatDateHeading(parseDateKey(dateKey))}</h3>
+      </div>
+      <span class="pill">${matches.length} match${matches.length === 1 ? "" : "es"}</span>
+    </div>
+    <div class="match-day-list"></div>
+  `;
+
+  const list = dayPanel.querySelector(".match-day-list");
+  if (matches.length === 0) {
+    list.innerHTML = `<p class="muted empty-state">No matches scheduled for this day.</p>`;
+  } else {
+    matches.forEach((match) => {
+      list.append(renderMatchRow(match));
+    });
+  }
+
+  els.matches.append(dayPanel);
+}
+
+function groupMatchesByDate(matches) {
+  return matches.reduce((groups, match) => {
+    const date = new Date(match.kickoff);
+    const key = getDateKey(date);
+    groups[key] = groups[key] || [];
+    groups[key].push(match);
+    return groups;
+  }, {});
+}
+
+function getDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getClosestUpcomingDateKey(groupedMatches) {
+  const now = Date.now();
+  const futureMatch = Object.values(groupedMatches)
+    .flat()
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+    .find((match) => new Date(match.kickoff).getTime() >= now);
+  return futureMatch ? getDateKey(new Date(futureMatch.kickoff)) : Object.keys(groupedMatches)[0];
+}
+
+function parseDateKey(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function shiftDateKey(dateKey, amount) {
+  const date = parseDateKey(dateKey);
+  date.setDate(date.getDate() + amount);
+  const nextKey = getDateKey(date);
+  if (nextKey < MATCH_DATE_MIN || nextKey > MATCH_DATE_MAX) return "";
+  return nextKey;
+}
+
+function clampDateKey(dateKey) {
+  if (dateKey < MATCH_DATE_MIN) return MATCH_DATE_MIN;
+  if (dateKey > MATCH_DATE_MAX) return MATCH_DATE_MAX;
+  return dateKey;
+}
+
+function isTodayKey(dateKey) {
+  return dateKey === getDateKey(new Date());
+}
+
+async function handlePredictionInput(event) {
+  const form = event.currentTarget;
+  const matchId = form.dataset.matchId;
+  const match = matchesData.find((item) => item.id === matchId);
+  if (!activePlayerId || !match || isLocked(match)) return;
+
+  const homeValue = form.homeScore.value;
+  const awayValue = form.awayScore.value;
+  if (homeValue === "" && awayValue === "") {
+    delete state.predictions[predictionKey(activePlayerId, matchId)];
+    await deletePrediction(activePlayerId, matchId);
+    saveState();
+    updateAutosaveMessage(form, "Prediction cleared.");
+    renderPlayerPredictions();
+    return;
+  }
+  if (homeValue === "" || awayValue === "") return;
+
+  const prediction = {
+    playerId: activePlayerId,
+    matchId,
+    homeScore: Number(homeValue),
+    awayScore: Number(awayValue),
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.predictions[predictionKey(activePlayerId, matchId)] = prediction;
+  await savePrediction(prediction);
+  saveState();
+  updateAutosaveMessage(form, `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`);
+  renderPlayerPredictions();
+}
+
+function updateAutosaveMessage(form, message) {
+  const row = form.closest(".match-row");
+  if (!row) return;
+  row.querySelector(".lock-message").textContent = message;
+}
+
+function renderLeaderboard() {
+  const rows = Object.values(state.players)
+    .map((player) => ({ player, stats: calculatePlayerStats(player.id) }))
+    .sort((a, b) => b.stats.points - a.stats.points || b.stats.correctPredictions - a.stats.correctPredictions);
+
+  els.leaderboardCount.textContent = `${rows.length} players`;
+  els.leaderboardBody.innerHTML = rows
+    .map(
+      (row, index) => `
+        <tr class="leaderboard-row">
+          <td><span class="rank-badge">${index + 1}</span></td>
+          <td>
+            <strong class="leaderboard-name">${escapeHtml(row.player.name)}</strong>
+            <span class="leaderboard-id">${escapeHtml(row.player.id)}</span>
+          </td>
+          <td><strong class="leaderboard-points">${row.stats.points}</strong></td>
+          <td>${row.stats.correctPredictions}</td>
+          <td>${leaderboardFormHtml(row.player.id)}</td>
+        </tr>
+      `,
+    )
+    .join("") || `<tr><td colspan="5" class="muted">No players yet.</td></tr>`;
+}
+
+function leaderboardFormHtml(playerId) {
+  const recent = getRecentPlayerForm(playerId);
+  const items = [...recent];
+  while (items.length < 5) items.push(null);
+
+  return `
+    <div class="form-strip" aria-label="Recent form">
+      ${items.map((item) => item ? formDotHtml(item) : `<span class="form-dot form-empty" aria-label="No result yet"></span>`).join("")}
+    </div>
+  `;
+}
+
+function getRecentPlayerForm(playerId) {
+  return matchesData
+    .map((match) => {
+      const prediction = getPrediction(playerId, match.id);
+      const result = state.results[match.id];
+      if (!prediction || !result) return null;
+      return {
+        match,
+        result,
+        score: scorePrediction(prediction, result),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.match.kickoff) - new Date(a.match.kickoff))
+    .slice(0, 5);
+}
+
+function formDotHtml(item) {
+  const status = getPredictionStatus(item.score);
+  const tooltip = leaderboardBreakdownHtml(item.match, item.result, item.score);
+  const label = `${item.match.home} ${item.result.homeScore}-${item.result.awayScore} ${item.match.away}. Total ${item.score.points} points.`;
+  return `
+    <button class="form-dot ${status.className}" type="button" aria-label="${escapeHtml(label)}">
+      <span class="status-tooltip">${tooltip}</span>
+    </button>
+  `;
+}
+
+function renderPlayerPredictions() {
+  syncViewedPredictionPlayer();
+  renderPredictionPlayerOptions();
+
+  const player = state.players[viewedPredictionPlayerId];
+  if (!player) {
+    els.predictionTotal.textContent = "0";
+    els.playerPredictions.innerHTML = `<p class="muted">No active player loaded.</p>`;
+    return;
+  }
+
+  const predictions = matchesData.map((match) => {
+    const prediction = getPrediction(viewedPredictionPlayerId, match.id);
+    const result = state.results[match.id];
+    const score = prediction && result ? scorePrediction(prediction, result) : null;
+    return { match, prediction, result, score };
+  }).filter((item) => item.prediction);
+
+  const stats = calculatePlayerStats(player.id);
+  els.predictionTotal.textContent = stats.points;
+
+  els.playerPredictions.innerHTML = predictions
+    .map(
+      ({ match, prediction, result, score }) => {
+        const status = getPredictionStatus(score);
+        const details = result
+          ? predictionBreakdownHtml(match, result, score)
+          : `<strong>Result pending</strong><span>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</span>`;
+        const detailsLabel = result
+          ? `Result: ${match.home} ${result.homeScore}-${result.awayScore} ${match.away}. ${score.breakdown.map((item) => `${item.label} ${item.points} points`).join(", ")}. Total ${score.points} points.`
+          : `Result pending for ${match.home} vs ${match.away}.`;
+
+        return `
+        <article class="prediction-item compact-prediction">
+          <time>${formatShortDate(new Date(match.kickoff))}</time>
+          <div class="prediction-fixture">
+            <strong class="prediction-teams">
+              ${teamHtml(match.home)}
+              <span class="prediction-score">${prediction.homeScore}-${prediction.awayScore}</span>
+              ${teamHtml(match.away)}
+            </strong>
+            <span>${escapeHtml(match.group)}</span>
+          </div>
+          <button class="prediction-status ${status.className}" type="button" aria-label="${escapeHtml(detailsLabel)}">
+            <span>${status.pointsText}</span>
+            <span class="status-tooltip">${details}</span>
+          </button>
+        </article>
+      `;
+      },
+    )
+    .join("") || `<p class="muted">This player has not made any predictions yet.</p>`;
+}
+
+function syncViewedPredictionPlayer() {
+  if (viewedPredictionPlayerId && state.players[viewedPredictionPlayerId]) return;
+  viewedPredictionPlayerId = activePlayerId && state.players[activePlayerId] ? activePlayerId : Object.keys(state.players)[0] || "";
+}
+
+function renderPredictionPlayerOptions() {
+  const players = Object.values(state.players).sort((a, b) => a.name.localeCompare(b.name));
+  els.predictionPlayerSelect.innerHTML = players
+    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`)
+    .join("");
+  els.predictionPlayerSelect.value = viewedPredictionPlayerId;
+  els.predictionPlayerSelect.disabled = players.length === 0;
+}
+
+function getPredictionStatus(score) {
+  if (!score) {
+    return {
+      className: "status-pending",
+      label: "Result pending",
+      pointsText: "-",
+    };
+  }
+
+  if (score.exactScore) {
+    return {
+      className: "status-perfect",
+      label: `Perfect result, ${score.points} points`,
+      pointsText: score.points,
+    };
+  }
+
+  if (score.correctOutcome) {
+    return {
+      className: "status-winner",
+      label: `Winner correct, ${score.points} points`,
+      pointsText: score.points,
+    };
+  }
+
+  return {
+    className: "status-zero",
+    label: `No points, ${score.points} points`,
+    pointsText: score.points,
+  };
+}
+
+function predictionBreakdownHtml(match, result, score) {
+  const rows = score.breakdown.length
+    ? score.breakdown.map((item) => `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`).join("")
+    : `<span>No scoring rules matched <strong>0</strong></span>`;
+
+  return `
+    <strong>Result: ${teamFlagHtml(match.home)} ${result.homeScore}-${result.awayScore} ${teamFlagHtml(match.away)}</strong>
+    ${rows}
+    <span>Total <strong>${score.points}</strong></span>
+  `;
+}
+
+function leaderboardBreakdownHtml(match, result, score) {
+  const rows = score.breakdown.length
+    ? score.breakdown.map((item) => `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`).join("")
+    : `<span>No scoring rules matched <strong>0</strong></span>`;
+
+  return `
+    <strong>${teamFlagHtml(match.home)} ${result.homeScore}-${result.awayScore} ${teamFlagHtml(match.away)}</strong>
+    ${rows}
+    <span>Total points <strong>${score.points}</strong></span>
+  `;
+}
+
+function renderResultsAdmin() {
+  if (!adminUnlocked) return;
+
+  els.resultsAdmin.innerHTML = matchesData.map((match) => {
+    const result = state.results[match.id] || {};
+    return `
+      <form class="admin-row" data-match-id="${match.id}">
+        <div>
+          <strong class="admin-match-title">${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
+          <p class="muted">${formatDate(new Date(match.kickoff))}</p>
+        </div>
+        <label class="admin-score-label">
+          ${teamHtml(match.home)}
+          <input type="number" min="0" max="30" name="homeScore" value="${result.homeScore ?? ""}" />
+        </label>
+        <label class="admin-score-label">
+          ${teamHtml(match.away)}
+          <input type="number" min="0" max="30" name="awayScore" value="${result.awayScore ?? ""}" />
+        </label>
+        <button type="submit">Set</button>
+      </form>
+    `;
+  }).join("");
+
+  els.resultsAdmin.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const matchId = form.dataset.matchId;
+      const homeScore = Number(form.homeScore.value);
+      const awayScore = Number(form.awayScore.value);
+      if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return;
+      const result = {
+        matchId,
+        homeScore,
+        awayScore,
+        updatedAt: new Date().toISOString(),
+      };
+      state.results[matchId] = result;
+      await saveResult(result);
+      saveState();
+      render();
+    });
+  });
+}
+
+function renderConfig() {
+  if (!adminUnlocked) return;
+
+  const controls = [
+    ["lockMinutesBeforeKickoff", state.config.lockMinutesBeforeKickoff],
+    ...Object.entries(state.config.points),
+  ];
+
+  els.scoringConfig.innerHTML = controls
+    .map(
+      ([key, value]) => `
+        <label>
+          ${labelize(key)}
+          <input type="number" name="${key}" value="${value}" />
+        </label>
+      `,
+    )
+    .join("");
+}
+
+function renderUsersAdmin() {
+  if (!adminUnlocked) return;
+
+  const players = Object.values(state.players).sort((a, b) => a.name.localeCompare(b.name));
+  els.usersAdmin.innerHTML = players
+    .map((player) => {
+      const stats = calculatePlayerStats(player.id);
+      const predictionCount = Object.values(state.predictions).filter((prediction) => prediction.playerId === player.id).length;
+      return `
+        <article class="user-admin-row">
+          <div>
+            <strong>${escapeHtml(player.name)}</strong>
+            <p class="muted">${escapeHtml(player.id)} - ${stats.points} pts - ${predictionCount} predictions</p>
+          </div>
+          <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
+        </article>
+      `;
+    })
+    .join("") || `<p class="muted">No users to delete yet.</p>`;
+
+  els.usersAdmin.querySelectorAll(".delete-user").forEach((button) => {
+    button.addEventListener("click", () => {
+      deleteUser(button.dataset.playerId);
+    });
+  });
+}
+
+async function deleteUser(playerId) {
+  const player = state.players[playerId];
+  if (!player) return;
+
+  const confirmed = window.confirm(`Delete ${player.name} and all of their predictions?`);
+  if (!confirmed) return;
+
+  await deletePlayerFromSupabase(playerId);
+  delete state.players[playerId];
+  Object.keys(state.predictions).forEach((key) => {
+    if (state.predictions[key].playerId === playerId) {
+      delete state.predictions[key];
+    }
+  });
+
+  if (activePlayerId === playerId) {
+    activePlayerId = "";
+    state.activePlayerId = "";
+  }
+
+  if (viewedPredictionPlayerId === playerId) {
+    viewedPredictionPlayerId = activePlayerId;
+  }
+
+  saveState();
+  render();
+}
+
+function calculatePlayerStats(playerId) {
+  return matchesData.reduce(
+    (stats, match) => {
+      const prediction = getPrediction(playerId, match.id);
+      const result = state.results[match.id];
+      if (!prediction || !result) return stats;
+
+      const score = scorePrediction(prediction, result);
+      stats.points += score.points;
+      if (score.correctOutcome) stats.correctPredictions += 1;
+      return stats;
+    },
+    { points: 0, correctPredictions: 0 },
+  );
+}
+
+function scorePrediction(prediction, result) {
+  const predictedOutcome = outcome(prediction.homeScore, prediction.awayScore);
+  const actualOutcome = outcome(result.homeScore, result.awayScore);
+  const exactScore = prediction.homeScore === result.homeScore && prediction.awayScore === result.awayScore;
+  const correctOutcome = predictedOutcome === actualOutcome;
+  const correctGoalDifference =
+    prediction.homeScore - prediction.awayScore === result.homeScore - result.awayScore;
+  const correctTeamGoals =
+    prediction.homeScore === result.homeScore || prediction.awayScore === result.awayScore;
+
+  let points = 0;
+  const breakdown = [];
+
+  if (exactScore) {
+    points = state.config.points.exactScore;
+    breakdown.push({ label: "Exact correct result", points: state.config.points.exactScore });
+    return { points, exactScore, correctOutcome, breakdown };
+  }
+
+  if (correctOutcome) {
+    points += state.config.points.correctOutcome;
+    breakdown.push({ label: "Correct outcome", points: state.config.points.correctOutcome });
+  }
+  if (correctGoalDifference) {
+    points += state.config.points.correctGoalDifferenceBonus;
+    breakdown.push({ label: "Correct goal difference", points: state.config.points.correctGoalDifferenceBonus });
+  }
+  if (correctTeamGoals) {
+    points += state.config.points.correctTeamGoalsBonus;
+    breakdown.push({ label: "Correct goals scored for 1 team", points: state.config.points.correctTeamGoalsBonus });
+  }
+
+  return { points, exactScore, correctOutcome, breakdown };
+}
+
+function outcome(homeScore, awayScore) {
+  if (homeScore > awayScore) return "HOME";
+  if (homeScore < awayScore) return "AWAY";
+  return "DRAW";
+}
+
+function isLocked(match) {
+  const lockAt = new Date(match.kickoff).getTime() - state.config.lockMinutesBeforeKickoff * 60 * 1000;
+  return Date.now() >= lockAt;
+}
+
+function getPrediction(playerId, matchId) {
+  return state.predictions[predictionKey(playerId, matchId)];
+}
+
+function predictionKey(playerId, matchId) {
+  return `${playerId}:${matchId}`;
+}
+
+function teamHtml(team) {
+  const flagCode = TEAM_FLAG_CODES[team];
+  const name = `<span class="team-name">${escapeHtml(team)}</span>`;
+  if (!flagCode) return name;
+  return `${teamFlagHtml(team)}${name}`;
+}
+
+function teamFlagHtml(team) {
+  const flagCode = TEAM_FLAG_CODES[team];
+  if (!flagCode) return "";
+  const fallback = team
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return `
+    <span class="flag" aria-hidden="true">
+      <img src="https://flagcdn.com/${flagCode}.svg" alt="" loading="lazy" onerror="this.closest('.flag').classList.add('flag-missing'); this.remove();" />
+      <span class="flag-fallback">${escapeHtml(fallback)}</span>
+    </span>
+  `;
+}
+
+function formatDate(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatDateHeading(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatTime(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatTabDate(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatShortDate(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function labelize(value) {
+  return value.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+initializeApp();
