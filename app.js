@@ -3,7 +3,6 @@ const DEFAULT_CONFIG = {
   points: {
     exactScore: 5,
     correctOutcome: 2,
-    correctGoalDifferenceBonus: 1,
     correctTeamGoalsBonus: 1,
   },
 };
@@ -319,6 +318,14 @@ function loadState() {
 
 function normalizeState(value) {
   const players = value.players || {};
+  const savedPoints = (value.config && value.config.points) || {};
+  const points = Object.fromEntries(
+    Object.keys(DEFAULT_CONFIG.points).map((key) => [
+      key,
+      savedPoints[key] ?? DEFAULT_CONFIG.points[key],
+    ]),
+  );
+
   Object.values(players).forEach((player) => {
     player.username = player.username || player.id;
     player.name = player.name || player.username || player.id;
@@ -332,10 +339,7 @@ function normalizeState(value) {
     config: {
       ...DEFAULT_CONFIG,
       ...(value.config || {}),
-      points: {
-        ...DEFAULT_CONFIG.points,
-        ...((value.config && value.config.points) || {}),
-      },
+      points,
     },
   };
 }
@@ -993,7 +997,6 @@ function renderPointsBreakdown() {
   const rules = [
     ["Perfect score", state.config.points.exactScore, "Exact scoreline. This replaces all other bonuses."],
     ["Correct result", state.config.points.correctOutcome, "Right winner, or correctly predicted a draw."],
-    ["Goal difference", state.config.points.correctGoalDifferenceBonus, "Right margin between the teams."],
     ["Team goals", state.config.points.correctTeamGoalsBonus, "One team's goals exactly right."],
   ];
 
@@ -1317,8 +1320,6 @@ function scorePrediction(prediction, result) {
   const actualOutcome = outcome(result.homeScore, result.awayScore);
   const exactScore = prediction.homeScore === result.homeScore && prediction.awayScore === result.awayScore;
   const correctOutcome = predictedOutcome === actualOutcome;
-  const correctGoalDifference =
-    prediction.homeScore - prediction.awayScore === result.homeScore - result.awayScore;
   const correctTeamGoals =
     prediction.homeScore === result.homeScore || prediction.awayScore === result.awayScore;
 
@@ -1334,10 +1335,6 @@ function scorePrediction(prediction, result) {
   if (correctOutcome) {
     points += state.config.points.correctOutcome;
     breakdown.push({ label: "Correct result", points: state.config.points.correctOutcome });
-  }
-  if (correctGoalDifference) {
-    points += state.config.points.correctGoalDifferenceBonus;
-    breakdown.push({ label: "Goal difference", points: state.config.points.correctGoalDifferenceBonus });
   }
   if (correctTeamGoals) {
     points += state.config.points.correctTeamGoalsBonus;
