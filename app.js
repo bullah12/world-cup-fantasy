@@ -946,6 +946,7 @@ const els = {
   joinLeagueSelect: document.querySelector("#join-league-select"),
   joinLeagueButton: document.querySelector("#join-league-button"),
   joinLeagueMessage: document.querySelector("#join-league-message"),
+  leaveLeagueButton: document.querySelector("#leave-league-button"),
   teamViewTabs: document.querySelectorAll(".team-view-tab"),
   teamsContent: document.querySelector("#teams-content"),
   pointsBreakdownList: document.querySelector("#points-breakdown-list"),
@@ -1021,6 +1022,23 @@ els.joinLeagueButton.addEventListener("click", async () => {
   } catch (error) {
     console.error(error);
     els.joinLeagueMessage.textContent = error.message || "Could not join league.";
+  }
+});
+
+els.leaveLeagueButton.addEventListener("click", async () => {
+  if (!activePlayerId || leaderboardScope === WORLDWIDE_SCOPE) return;
+
+  const leagueLabel = leagueName(leaderboardScope);
+  const confirmed = window.confirm(`Leave ${leagueLabel}?`);
+  if (!confirmed) return;
+
+  try {
+    await leavePlayerLeague(activePlayerId, leaderboardScope);
+    leaderboardScope = getPlayerLeagueIds(activePlayerId)[0] || WORLDWIDE_SCOPE;
+    render();
+  } catch (error) {
+    console.error(error);
+    window.alert(error.message || "Could not leave league.");
   }
 });
 
@@ -1515,6 +1533,16 @@ async function joinPlayerLeague(playerId, leagueId) {
   await savePlayerLeagues(player);
 }
 
+async function leavePlayerLeague(playerId, leagueId) {
+  const player = state.players[playerId];
+  if (!player) return;
+
+  const leagueIds = normalizeLeagueIds(player.leagueIds).filter((id) => id !== leagueId);
+  player.leagueIds = leagueIds;
+  player.leagueId = leagueIds[0] || "";
+  await savePlayerLeagues(player);
+}
+
 async function savePlayerLeagues(player) {
   if (!supabaseClient) return;
   const { error } = await supabaseClient
@@ -1920,6 +1948,9 @@ function renderLeaderboard() {
   `).join("");
 
   renderJoinLeagueControls(activeLeagueIds);
+  els.leaveLeagueButton.hidden = !activePlayerId
+    || leaderboardScope === WORLDWIDE_SCOPE
+    || !activeLeagueIds.includes(leaderboardScope);
 
   const rows = Object.values(state.players)
     .filter((player) => leaderboardScope === WORLDWIDE_SCOPE || getPlayerLeagueIds(player.id).includes(leaderboardScope))

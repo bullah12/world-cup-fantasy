@@ -990,6 +990,23 @@ th {
   grid-column: 1 / -1;
 }
 
+.leaderboard-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.7rem 0 0.35rem;
+}
+
+.danger-button {
+  background: #b43b45;
+  color: #fff;
+}
+
+.danger-button:hover,
+.danger-button.active {
+  background: #8f2932;
+  color: #fff;
+}
+
 .points-breakdown {
   display: grid;
   gap: 0.85rem;
