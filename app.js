@@ -7,6 +7,11 @@ const DEFAULT_CONFIG = {
   },
 };
 
+const LEAGUES = {
+  "brum-family": "Brum Family",
+  summer2k: "summer2k",
+};
+
 const SUPABASE_URL = "https://lxawkhvkhbcdpermvqbc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4YXdraHZraGJjZHBlcm12cWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzMxMjIsImV4cCI6MjA5NjQ0OTEyMn0.nr4Xn2Phw8XNXJai99WUpjJgopL7rIxa1oBEo5ZWmJw";
 const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -911,11 +916,13 @@ let selectedMatchDateKey = "";
 let adminUnlocked = false;
 let countdownMatchId = "";
 let selectedTeamView = "groups";
+let leaderboardScope = "league";
 
 const els = {
   playerForm: document.querySelector("#player-form"),
   playerUsername: document.querySelector("#player-username"),
   playerDisplayName: document.querySelector("#player-display-name"),
+  playerLeague: document.querySelector("#player-league"),
   createdPlayer: document.querySelector("#created-player"),
   playerNavButton: document.querySelector("#player-nav-button"),
   playerNavLabel: document.querySelector("#player-nav-label"),
@@ -931,6 +938,8 @@ const els = {
   matchTemplate: document.querySelector("#match-row-template"),
   leaderboardBody: document.querySelector("#leaderboard-body"),
   leaderboardCount: document.querySelector("#leaderboard-count"),
+  leaderboardScopeTabs: document.querySelectorAll(".leaderboard-scope-tab"),
+  leaderboardScopeSummary: document.querySelector("#leaderboard-scope-summary"),
   teamViewTabs: document.querySelectorAll(".team-view-tab"),
   teamsContent: document.querySelector("#teams-content"),
   pointsBreakdownList: document.querySelector("#points-breakdown-list"),
@@ -986,6 +995,13 @@ els.teamViewTabs.forEach((tab) => {
   });
 });
 
+els.leaderboardScopeTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    leaderboardScope = tab.dataset.leaderboardScope;
+    renderLeaderboard();
+  });
+});
+
 els.adminLoginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   els.adminLoginMessage.textContent = "Checking admin access...";
@@ -1019,6 +1035,7 @@ els.playerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const username = els.playerUsername.value.trim();
   const displayName = els.playerDisplayName.value.trim();
+  const leagueId = normalizeLeagueId(els.playerLeague.value);
   if (!username || !displayName) return;
   const playerId = createPlayerId(username);
 
@@ -1031,6 +1048,7 @@ els.playerForm.addEventListener("submit", async (event) => {
     id: playerId,
     username,
     name: displayName,
+    leagueId,
     createdAt: new Date().toISOString(),
   };
 
@@ -1048,6 +1066,7 @@ els.playerForm.addEventListener("submit", async (event) => {
   els.createdPlayer.textContent = "";
   els.playerUsername.value = "";
   els.playerDisplayName.value = "";
+  els.playerLeague.value = "";
   closePlayerModal();
 });
 
@@ -1108,6 +1127,7 @@ function normalizeState(value) {
   Object.values(players).forEach((player) => {
     player.username = player.username || player.id;
     player.name = player.name || player.username || player.id;
+    player.leagueId = normalizeLeagueId(player.leagueId || player.league_id || "");
   });
 
   return {
@@ -1179,6 +1199,7 @@ async function loadSupabaseState() {
       id: player.id,
       username: player.username,
       name: player.display_name,
+      leagueId: normalizeLeagueId(player.league_id),
       createdAt: player.created_at,
     },
   ]));
@@ -1291,6 +1312,7 @@ async function savePlayer(player) {
     id: player.id,
     username: player.username,
     display_name: player.name,
+    league_id: player.leagueId || null,
   });
   if (error) {
     if (error.code === "23505") throw new Error("That username is already taken. Choose a different name.");
@@ -1420,8 +1442,21 @@ function setActivePlayer(playerId) {
   activePlayerId = playerId;
   viewedPredictionPlayerId = playerId;
   state.activePlayerId = playerId;
+  leaderboardScope = getPlayerLeagueId(playerId) ? "league" : "worldwide";
   saveState();
   render();
+}
+
+function normalizeLeagueId(leagueId) {
+  return LEAGUES[leagueId] ? leagueId : "";
+}
+
+function getPlayerLeagueId(playerId) {
+  return normalizeLeagueId(state.players[playerId]?.leagueId || "");
+}
+
+function leagueName(leagueId) {
+  return LEAGUES[leagueId] || "";
 }
 
 function renderModalPlayerOptions() {
@@ -1434,7 +1469,11 @@ function renderModalPlayerOptions() {
   }
 
   els.modalPlayerSelect.innerHTML = players
-    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`)
+    .map((player) => {
+      const league = leagueName(player.leagueId);
+      const suffix = league ? ` - ${league}` : " - worldwide";
+      return `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})${escapeHtml(suffix)}</option>`;
+    })
     .join("");
   els.modalPlayerSelect.value = activePlayerId && state.players[activePlayerId] ? activePlayerId : players[0]?.id || "";
   els.modalPlayerSelect.disabled = false;
@@ -1476,8 +1515,9 @@ function renderAdminAccess() {
 
 function renderSummary() {
   const player = state.players[activePlayerId];
+  const league = player ? leagueName(player.leagueId) : "";
   els.activeSummary.textContent = player
-    ? `Predicting as ${player.name} (${player.id}).`
+    ? `Predicting as ${player.name} (${player.id})${league ? ` in ${league}` : " with worldwide ranking only"}.`
     : "Create or select your player, then predict each score before the one-hour lockout.";
   els.playerNavLabel.textContent = player ? "" : "Create player";
   els.activePlayerName.textContent = player ? player.name : "";
@@ -1799,11 +1839,27 @@ function updateAutosaveMessage(form, message) {
 }
 
 function renderLeaderboard() {
+  const activeLeagueId = getPlayerLeagueId(activePlayerId);
+  if (leaderboardScope === "league" && !activeLeagueId) {
+    leaderboardScope = "worldwide";
+  }
+
+  els.leaderboardScopeTabs.forEach((tab) => {
+    const isLeagueTab = tab.dataset.leaderboardScope === "league";
+    tab.classList.toggle("active", tab.dataset.leaderboardScope === leaderboardScope);
+    tab.disabled = isLeagueTab && !activeLeagueId;
+  });
+
   const rows = Object.values(state.players)
+    .filter((player) => leaderboardScope === "worldwide" || player.leagueId === activeLeagueId)
     .map((player) => ({ player, stats: calculatePlayerStats(player.id) }))
     .sort((a, b) => b.stats.points - a.stats.points || b.stats.correctPredictions - a.stats.correctPredictions);
 
+  const scopeName = leaderboardScope === "league" ? leagueName(activeLeagueId) : "Worldwide";
   els.leaderboardCount.textContent = `${rows.length} players`;
+  els.leaderboardScopeSummary.textContent = leaderboardScope === "league"
+    ? `Showing ${scopeName} rankings.`
+    : "Showing every player across all leagues and players without a league.";
   els.leaderboardBody.innerHTML = rows
     .map(
       (row, index) => `
@@ -1812,6 +1868,7 @@ function renderLeaderboard() {
           <td>
             <strong class="leaderboard-name">${escapeHtml(row.player.name)}</strong>
             <span class="leaderboard-id">${escapeHtml(row.player.id)}</span>
+            <span class="leaderboard-league">${escapeHtml(leagueName(row.player.leagueId) || "Worldwide only")}</span>
           </td>
           <td><strong class="leaderboard-points">${row.stats.points}</strong></td>
           <td>${row.stats.correctPredictions}</td>
@@ -1819,7 +1876,7 @@ function renderLeaderboard() {
         </tr>
       `,
     )
-    .join("") || `<tr><td colspan="5" class="muted">No players yet.</td></tr>`;
+    .join("") || `<tr><td colspan="5" class="muted">${leaderboardScope === "league" ? "No players in this league yet." : "No players yet."}</td></tr>`;
 }
 
 function renderTeams() {
@@ -2189,7 +2246,7 @@ function renderUsersAdmin() {
         <article class="user-admin-row">
           <div>
             <strong>${escapeHtml(player.name)}</strong>
-            <p class="muted">${escapeHtml(player.id)} - ${stats.points} pts - ${predictionCount} predictions</p>
+            <p class="muted">${escapeHtml(player.id)} - ${escapeHtml(leagueName(player.leagueId) || "Worldwide only")} - ${stats.points} pts - ${predictionCount} predictions</p>
           </div>
           <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
         </article>

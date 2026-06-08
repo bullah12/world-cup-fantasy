@@ -66,6 +66,14 @@
             Display name
             <input id="player-display-name" name="player-display-name" autocomplete="name" required />
           </label>
+          <label for="player-league">
+            League
+            <select id="player-league" name="player-league">
+              <option value="">No league - worldwide only</option>
+              <option value="brum-family">Brum Family</option>
+              <option value="summer2k">summer2k</option>
+            </select>
+          </label>
           <button type="submit">Create player</button>
           <p id="created-player" class="muted"></p>
         </form>
@@ -124,6 +132,13 @@
                 <h2>Leaderboard</h2>
               </div>
               <span id="leaderboard-count" class="pill"></span>
+            </div>
+            <div class="leaderboard-controls">
+              <div class="leaderboard-scope-tabs" aria-label="Leaderboard scope">
+                <button class="leaderboard-scope-tab active" type="button" data-leaderboard-scope="league">My league</button>
+                <button class="leaderboard-scope-tab" type="button" data-leaderboard-scope="worldwide">Worldwide</button>
+              </div>
+              <p id="leaderboard-scope-summary" class="muted"></p>
             </div>
             <div class="table-wrap">
               <table>
