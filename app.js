@@ -1066,7 +1066,7 @@ els.playerForm.addEventListener("submit", async (event) => {
   els.createdPlayer.textContent = "";
   els.playerUsername.value = "";
   els.playerDisplayName.value = "";
-  els.playerLeague.value = "";
+  els.playerLeague.value = "brum-family";
   closePlayerModal();
 });
 
