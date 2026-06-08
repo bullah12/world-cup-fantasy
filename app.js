@@ -142,6 +142,7 @@ let activePlayerId = state.activePlayerId || "";
 let viewedPredictionPlayerId = activePlayerId;
 let selectedMatchDateKey = "";
 let adminUnlocked = false;
+let countdownMatchId = "";
 
 const els = {
   playerForm: document.querySelector("#player-form"),
@@ -695,8 +696,23 @@ function renderNextMatchesSummary(groupedMatches) {
   const closestDateKey = getClosestUpcomingDateKey(groupedMatches) || Object.keys(groupedMatches)[0];
   const matches = groupedMatches[closestDateKey];
   const heading = isTodayKey(closestDateKey) ? "Today's matches" : "Next matches";
+  const nextMatch = getNextUpcomingMatch();
+  countdownMatchId = nextMatch?.id || "";
 
   els.nextMatches.innerHTML = `
+    ${nextMatch ? `
+      <section class="match-countdown">
+        <p class="eyebrow">Next match starts in</p>
+        <time class="countdown-clock" dateTime="${escapeHtml(nextMatch.kickoff)}" data-countdown-target="${escapeHtml(nextMatch.kickoff)}">
+          ${countdownHtml(nextMatch.kickoff)}
+        </time>
+      </section>
+    ` : `
+      <section class="match-countdown is-complete">
+        <p class="eyebrow">Tournament status</p>
+        <strong>All scheduled matches have kicked off.</strong>
+      </section>
+    `}
     <div class="next-matches-head">
       <div>
         <p class="eyebrow">${heading}</p>
@@ -708,7 +724,10 @@ function renderNextMatchesSummary(groupedMatches) {
       ${matches.map((match) => `
         <button class="next-match-chip" type="button" data-date-key="${closestDateKey}">
           <span>${formatTime(new Date(match.kickoff))}</span>
-          <strong>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
+          <span class="next-match-details">
+            <strong>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
+            <small>${escapeHtml(match.venue)}</small>
+          </span>
         </button>
       `).join("")}
     </div>
@@ -724,6 +743,7 @@ function renderNextMatchesSummary(groupedMatches) {
       renderMatches();
     });
   });
+  updateNextMatchCountdown();
 }
 
 function renderMatchDateNavigator(groupedMatches) {
@@ -799,6 +819,69 @@ function getClosestUpcomingDateKey(groupedMatches) {
     .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
     .find((match) => new Date(match.kickoff).getTime() >= now);
   return futureMatch ? getDateKey(new Date(futureMatch.kickoff)) : Object.keys(groupedMatches)[0];
+}
+
+function getNextUpcomingMatch() {
+  const now = Date.now();
+  return [...matchesData]
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+    .find((match) => new Date(match.kickoff).getTime() > now);
+}
+
+function updateNextMatchCountdown() {
+  const clock = els.nextMatches.querySelector("[data-countdown-target]");
+  if (!clock) return;
+
+  const target = clock.dataset.countdownTarget;
+  const remaining = new Date(target).getTime() - Date.now();
+  if (remaining <= 0) {
+    clock.textContent = "Kick-off";
+    const nextMatch = getNextUpcomingMatch();
+    if (nextMatch?.id !== countdownMatchId) renderMatches();
+    return;
+  }
+
+  const parts = getCountdownParts(target);
+  clock.querySelectorAll(".countdown-value").forEach((valueEl) => {
+    const nextValue = parts[valueEl.dataset.unit];
+    if (!nextValue || valueEl.textContent === nextValue) return;
+
+    valueEl.textContent = nextValue;
+    valueEl.classList.remove("is-flipping");
+    void valueEl.offsetWidth;
+    valueEl.classList.add("is-flipping");
+  });
+}
+
+function countdownHtml(kickoff) {
+  const parts = getCountdownParts(kickoff);
+  return [
+    ["days", parts.days],
+    ["hours", parts.hours],
+    ["minutes", parts.minutes],
+    ["seconds", parts.seconds],
+  ].map(([unit, value]) => `
+    <span class="countdown-unit">
+      <span class="countdown-value" data-unit="${unit}">${value}</span>
+      <span class="countdown-label">${unit}</span>
+    </span>
+  `).join("");
+}
+
+function getCountdownParts(kickoff) {
+  const remaining = Math.max(0, new Date(kickoff).getTime() - Date.now());
+  const totalSeconds = Math.floor(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    days: String(days).padStart(2, "0"),
+    hours: String(hours).padStart(2, "0"),
+    minutes: String(minutes).padStart(2, "0"),
+    seconds: String(seconds).padStart(2, "0"),
+  };
 }
 
 function parseDateKey(dateKey) {
@@ -1319,3 +1402,4 @@ function escapeHtml(value) {
 }
 
 initializeApp();
+setInterval(updateNextMatchCountdown, 1000);
