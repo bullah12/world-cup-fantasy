@@ -936,6 +936,7 @@ const els = {
   playerForm: document.querySelector("#player-form"),
   playerUsername: document.querySelector("#player-username"),
   playerDisplayName: document.querySelector("#player-display-name"),
+  playerPassword: document.querySelector("#player-password"),
   playerLeague: document.querySelector("#player-league"),
   createdPlayer: document.querySelector("#created-player"),
   playerNavButton: document.querySelector("#player-nav-button"),
@@ -944,7 +945,9 @@ const els = {
   playerModal: document.querySelector("#player-modal"),
   closePlayerModal: document.querySelector("#close-player-modal"),
   modalPlayerSelect: document.querySelector("#modal-player-select"),
+  modalPlayerPassword: document.querySelector("#modal-player-password"),
   modalLoginPlayer: document.querySelector("#modal-login-player"),
+  modalLoginMessage: document.querySelector("#modal-login-message"),
   activeSummary: document.querySelector("#active-player-summary"),
   nextMatches: document.querySelector("#next-matches"),
   matchDayTabs: document.querySelector("#match-day-tabs"),
@@ -1006,11 +1009,34 @@ els.playerModal.addEventListener("click", (event) => {
   if (event.target === els.playerModal) closePlayerModal();
 });
 
-els.modalLoginPlayer.addEventListener("click", () => {
+els.modalLoginPlayer.addEventListener("click", async () => {
   const playerId = els.modalPlayerSelect.value;
-  if (!playerId || !state.players[playerId]) return;
-  setActivePlayer(playerId);
-  closePlayerModal();
+  const password = els.modalPlayerPassword.value;
+  const player = state.players[playerId];
+  if (!player) return;
+
+  els.modalLoginMessage.textContent = "";
+  try {
+    const allowed = await verifyPlayerPassword(player, password);
+    if (!allowed) {
+      els.modalLoginMessage.textContent = "Incorrect password.";
+      return;
+    }
+
+    els.modalPlayerPassword.value = "";
+    setActivePlayer(playerId);
+    closePlayerModal();
+  } catch (error) {
+    console.error(error);
+    els.modalLoginMessage.textContent =
+      error.message || "Could not log in as this player.";
+  }
+});
+
+els.modalPlayerPassword.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  els.modalLoginPlayer.click();
 });
 
 els.viewControls.forEach((control) => {
@@ -1120,9 +1146,14 @@ els.playerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const username = els.playerUsername.value.trim();
   const displayName = els.playerDisplayName.value.trim();
+  const password = els.playerPassword.value;
   const leagueId = normalizeLeagueId(els.playerLeague.value);
   const leagueIds = leagueId ? [leagueId] : [];
-  if (!username || !displayName) return;
+  if (!username || !displayName || !password) return;
+  if (password.length < 4) {
+    els.createdPlayer.textContent = "Use at least 4 characters for the password.";
+    return;
+  }
   const playerId = createPlayerId(username);
 
   if (findExistingPlayerId(playerId)) {
@@ -1131,31 +1162,32 @@ els.playerForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const player = {
-    id: playerId,
-    username,
-    name: displayName,
-    leagueId,
-    leagueIds,
-    createdAt: new Date().toISOString(),
-  };
-
-  state.players[player.id] = player;
   try {
+    const player = {
+      id: playerId,
+      username,
+      name: displayName,
+      leagueId,
+      leagueIds,
+      passwordHash: await hashPlayerPassword(playerId, password),
+      createdAt: new Date().toISOString(),
+    };
+
+    state.players[player.id] = player;
     await savePlayer(player);
+
+    setActivePlayer(player.id);
+    els.createdPlayer.textContent = "";
+    els.playerUsername.value = "";
+    els.playerDisplayName.value = "";
+    els.playerPassword.value = "";
+    els.playerLeague.value = DEFAULT_LEAGUE_ID;
+    closePlayerModal();
   } catch (error) {
-    delete state.players[player.id];
+    delete state.players[playerId];
     els.createdPlayer.textContent = error.message || "Could not create player.";
     renderModalPlayerOptions();
-    return;
   }
-
-  setActivePlayer(player.id);
-  els.createdPlayer.textContent = "";
-  els.playerUsername.value = "";
-  els.playerDisplayName.value = "";
-  els.playerLeague.value = DEFAULT_LEAGUE_ID;
-  closePlayerModal();
 });
 
 els.saveConfig.addEventListener("click", async () => {
@@ -1177,8 +1209,10 @@ els.saveConfig.addEventListener("click", async () => {
 });
 
 document.addEventListener("click", (event) => {
-  const tooltipButton = event.target.closest(".form-dot, .prediction-status");
-  if (event.target.closest(".status-tooltip")) return;
+  const tooltipButton = event.target.closest(
+    ".form-dot, .prediction-status, .mobile-tooltip-trigger, .leaderboard-league.has-tooltip",
+  );
+  if (event.target.closest(".status-tooltip, .mobile-tooltip, .league-tooltip")) return;
 
   document.querySelectorAll(".tooltip-open").forEach((button) => {
     if (button === tooltipButton) return;
@@ -1186,7 +1220,12 @@ document.addEventListener("click", (event) => {
     button.setAttribute("aria-expanded", "false");
   });
 
-  if (!tooltipButton || !tooltipButton.querySelector(".status-tooltip")) return;
+  if (
+    !tooltipButton ||
+    !tooltipButton.querySelector(".status-tooltip, .mobile-tooltip, .league-tooltip")
+  ) {
+    return;
+  }
 
   event.preventDefault();
   tooltipButton.classList.toggle("tooltip-open");
@@ -1221,6 +1260,7 @@ function normalizeState(value) {
   Object.values(players).forEach((player) => {
     player.username = player.username || player.id;
     player.name = player.name || player.username || player.id;
+    player.passwordHash = player.passwordHash || player.password_hash || "";
     player.leagueIds = normalizeLeagueIds(
       player.leagueIds ||
         player.league_ids ||
@@ -1321,6 +1361,7 @@ async function loadSupabaseState() {
         leagueIds: normalizeLeagueIds(player.league_ids || player.league_id),
         leagueId:
           normalizeLeagueIds(player.league_ids || player.league_id)[0] || "",
+        passwordHash: player.password_hash || "",
         createdAt: player.created_at,
       },
     ]),
@@ -1463,6 +1504,7 @@ async function savePlayer(player) {
     display_name: player.name,
     league_id: player.leagueIds[0] || null,
     league_ids: player.leagueIds,
+    password_hash: player.passwordHash,
   });
   if (error) {
     if (error.code === "23505")
@@ -1610,6 +1652,21 @@ function matchFromRow(row) {
 
 function createPlayerId(name) {
   return name.trim();
+}
+
+async function hashPlayerPassword(playerId, password) {
+  const input = `${playerId.trim().toLowerCase()}:${password}`;
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function verifyPlayerPassword(player, password) {
+  if (!player.passwordHash) return true;
+  if (!password) return false;
+  return (await hashPlayerPassword(player.id, password)) === player.passwordHash;
 }
 
 function createLeagueId(name) {
@@ -1767,12 +1824,15 @@ async function savePlayerLeagues(player) {
 }
 
 function renderModalPlayerOptions() {
+  els.modalPlayerPassword.value = "";
+  els.modalLoginMessage.textContent = "";
   const players = Object.values(state.players).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
   if (players.length === 0) {
     els.modalPlayerSelect.innerHTML = `<option>No players yet</option>`;
     els.modalPlayerSelect.disabled = true;
+    els.modalPlayerPassword.disabled = true;
     els.modalLoginPlayer.disabled = true;
     return;
   }
@@ -1788,6 +1848,7 @@ function renderModalPlayerOptions() {
       ? activePlayerId
       : players[0]?.id || "";
   els.modalPlayerSelect.disabled = false;
+  els.modalPlayerPassword.disabled = false;
   els.modalLoginPlayer.disabled = false;
 }
 
@@ -2544,8 +2605,8 @@ function bracketRoundHtml([round, matches]) {
           (match) => `
             <article class="bracket-match">
               <span>${escapeHtml(match.id.replace("M", "Match "))}</span>
-              <strong class="bracket-winner">${teamFlagHtml(match.winner, { className: "winner-flag", title: true })}</strong>
-              <p>${teamFlagHtml(match.home, { title: true })}<span>vs</span>${teamFlagHtml(match.away, { title: true })}</p>
+              <strong class="bracket-winner">${teamFlagHtml(match.winner, { className: "winner-flag", tooltip: true })}</strong>
+              <p>${teamFlagHtml(match.home, { tooltip: true })}<span>vs</span>${teamFlagHtml(match.away, { tooltip: true })}</p>
             </article>
           `,
         )
@@ -2563,7 +2624,7 @@ function groupProjectionHtml([group, table]) {
           (team, index) => `
             <div class="group-projection-row ${index < 2 ? "qualifies" : index === 2 ? "third-place" : ""}">
               <span>${index + 1}</span>
-              <strong>${teamHtml(team.team, { title: true })}</strong>
+              <strong>${teamHtml(team.team, { className: "mobile-tooltip-trigger", tooltip: true })}</strong>
               <em>${formatTableNumber(team.points)} pts</em>
               <small>${formatTableNumber(team.gf)}-${formatTableNumber(team.ga)}</small>
             </div>
@@ -3142,11 +3203,11 @@ function renderResultsAdmin() {
           <p class="muted">${escapeHtml(match.group)} - ${formatDate(new Date(match.kickoff))}</p>
         </div>
         <label class="admin-score-label">
-          ${teamHtml(match.home, { className: "admin-team-name", title: true })}
+          ${teamHtml(match.home, { className: "admin-team-name mobile-tooltip-trigger", tooltip: true })}
           <input type="number" min="0" max="30" name="homeScore" value="${result.homeScore ?? ""}" />
         </label>
         <label class="admin-score-label">
-          ${teamHtml(match.away, { className: "admin-team-name", title: true })}
+          ${teamHtml(match.away, { className: "admin-team-name mobile-tooltip-trigger", tooltip: true })}
           <input type="number" min="0" max="30" name="awayScore" value="${result.awayScore ?? ""}" />
         </label>
         <p class="admin-save-status muted" aria-live="polite">${result.matchId ? "Saved" : "Enter score"}</p>
@@ -3448,7 +3509,13 @@ function teamHtml(team, options = {}) {
   const flagCode = TEAM_FLAG_CODES[team];
   const classes = ["team-name", options.className].filter(Boolean).join(" ");
   const title = options.title ? ` title="${escapeHtml(team)}"` : "";
-  const name = `<span class="${escapeHtml(classes)}"${title}>${escapeHtml(team)}</span>`;
+  const tooltip = options.tooltip
+    ? `<span class="mobile-tooltip">${escapeHtml(team)}</span>`
+    : "";
+  const tooltipAttrs = options.tooltip
+    ? ` tabindex="0" role="button" aria-expanded="false"`
+    : "";
+  const name = `<span class="${escapeHtml(classes)}"${title}${tooltipAttrs}>${escapeHtml(team)}${tooltip}</span>`;
   if (!flagCode) return name;
   return `${teamFlagHtml(team)}${name}`;
 }
@@ -3457,6 +3524,13 @@ function teamFlagHtml(team, options = {}) {
   const flagCode = TEAM_FLAG_CODES[team];
   const classes = ["flag", options.className].filter(Boolean).join(" ");
   const title = options.title ? ` title="${escapeHtml(team)}"` : "";
+  const ariaHidden = options.tooltip ? "" : ` aria-hidden="true"`;
+  const tooltip = options.tooltip
+    ? `<span class="mobile-tooltip">${escapeHtml(team)}</span>`
+    : "";
+  const tooltipAttrs = options.tooltip
+    ? ` tabindex="0" role="button" aria-expanded="false"`
+    : "";
   const fallback = team
     .split(/\s+/)
     .map((part) => part[0])
@@ -3465,16 +3539,18 @@ function teamFlagHtml(team, options = {}) {
     .toUpperCase();
   if (!flagCode) {
     return `
-      <span class="${escapeHtml(classes)} flag-missing" aria-hidden="true"${title}>
+      <span class="${escapeHtml(classes)} flag-missing ${options.tooltip ? "mobile-tooltip-trigger" : ""}"${ariaHidden}${title}${tooltipAttrs}>
         <span class="flag-fallback">${escapeHtml(fallback)}</span>
+        ${tooltip}
       </span>
     `;
   }
 
   return `
-    <span class="${escapeHtml(classes)}" aria-hidden="true"${title}>
+    <span class="${escapeHtml(classes)} ${options.tooltip ? "mobile-tooltip-trigger" : ""}"${ariaHidden}${title}${tooltipAttrs}>
       <img src="https://flagcdn.com/${flagCode}.svg" alt="" loading="lazy" onerror="this.closest('.flag').classList.add('flag-missing'); this.remove();" />
       <span class="flag-fallback">${escapeHtml(fallback)}</span>
+      ${tooltip}
     </span>
   `;
 }

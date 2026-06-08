@@ -54,8 +54,10 @@
           <h3>Existing player</h3>
           <div class="modal-login-row">
             <select id="modal-player-select" aria-label="Existing player"></select>
+            <input id="modal-player-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Player password" />
             <button id="modal-login-player" type="button">Log in</button>
           </div>
+          <p id="modal-login-message" class="muted"></p>
         </section>
         <form id="player-form" class="player-modal-form">
           <h3>Create new player</h3>
@@ -67,8 +69,19 @@
             Display name
             <input id="player-display-name" name="player-display-name" autocomplete="name" required />
           </label>
+          <label for="player-password">
+            Password
+            <input id="player-password" name="player-password" type="password" autocomplete="new-password" minlength="4" required />
+          </label>
+          <p class="muted">This helps stop other players logging in as you and changing your predictions.</p>
           <label for="player-league">
-            League
+            <span class="label-with-help">
+              League
+              <button class="help-tooltip mobile-tooltip-trigger" type="button" aria-label="League help" aria-expanded="false">
+                ?
+                <span class="mobile-tooltip">If you'd like a league added, contact Abdullah Taj to add the league for you.</span>
+              </button>
+            </span>
             <select id="player-league" name="player-league"></select>
           </label>
           <button type="submit">Create player</button>
