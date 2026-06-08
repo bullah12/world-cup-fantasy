@@ -1337,6 +1337,12 @@ async function saveResult(result) {
   });
 }
 
+async function deleteResult(matchId) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.from("results").delete().eq("match_id", matchId);
+  if (error) throw error;
+}
+
 async function deletePlayerFromSupabase(playerId) {
   if (!supabaseClient) return;
   const { error } = await supabaseClient.from("players").delete().eq("id", playerId);
@@ -2085,30 +2091,70 @@ function renderResultsAdmin() {
           ${teamHtml(match.away)}
           <input type="number" min="0" max="30" name="awayScore" value="${result.awayScore ?? ""}" />
         </label>
-        <button type="submit">Set</button>
+        <p class="admin-save-status muted" aria-live="polite">${result.matchId ? "Saved" : "Enter score"}</p>
       </form>
     `;
   }).join("");
 
   els.resultsAdmin.querySelectorAll("form").forEach((form) => {
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const matchId = form.dataset.matchId;
-      const homeScore = Number(form.homeScore.value);
-      const awayScore = Number(form.awayScore.value);
-      if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return;
-      const result = {
-        matchId,
-        homeScore,
-        awayScore,
-        updatedAt: new Date().toISOString(),
-      };
-      state.results[matchId] = result;
-      await saveResult(result);
-      saveState();
-      render();
-    });
+    form.addEventListener("submit", (event) => event.preventDefault());
+    form.addEventListener("input", handleAdminResultInput);
   });
+}
+
+function handleAdminResultInput(event) {
+  const form = event.currentTarget;
+  const status = form.querySelector(".admin-save-status");
+  clearTimeout(form.saveTimer);
+  status.textContent = "Saving...";
+  form.saveTimer = setTimeout(() => {
+    saveAdminResultForm(form).catch((error) => {
+      console.error(error);
+      status.textContent = "Save failed";
+    });
+  }, 350);
+}
+
+async function saveAdminResultForm(form) {
+  const matchId = form.dataset.matchId;
+  const status = form.querySelector(".admin-save-status");
+  const homeValue = form.homeScore.value;
+  const awayValue = form.awayScore.value;
+
+  if (homeValue === "" && awayValue === "") {
+    delete state.results[matchId];
+    await deleteResult(matchId);
+    saveState();
+    status.textContent = "Cleared";
+    renderLeaderboard();
+    renderPlayerPredictions();
+    return;
+  }
+
+  if (homeValue === "" || awayValue === "") {
+    status.textContent = "Enter both scores";
+    return;
+  }
+
+  const homeScore = Number(homeValue);
+  const awayScore = Number(awayValue);
+  if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) {
+    status.textContent = "Invalid score";
+    return;
+  }
+
+  const result = {
+    matchId,
+    homeScore,
+    awayScore,
+    updatedAt: new Date().toISOString(),
+  };
+  state.results[matchId] = result;
+  await saveResult(result);
+  saveState();
+  status.textContent = "Saved";
+  renderLeaderboard();
+  renderPlayerPredictions();
 }
 
 function renderConfig() {

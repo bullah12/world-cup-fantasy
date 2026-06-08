@@ -1282,7 +1282,7 @@ th {
 }
 
 .admin-row {
-  grid-template-columns: minmax(0, 1fr) 80px 80px auto;
+  grid-template-columns: minmax(0, 1fr) 80px 80px 92px;
   align-items: end;
 }
 
@@ -1312,6 +1312,13 @@ th {
 
 .admin-score-label input {
   grid-column: 1 / -1;
+}
+
+.admin-save-status {
+  align-self: center;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-align: right;
 }
 
 .config-grid {
