@@ -11,6 +11,8 @@ const LEAGUES = {
   "brum-family": "Brum Family",
   summer2k: "summer2k",
 };
+const DEFAULT_LEAGUE_ID = "brum-family";
+const WORLDWIDE_SCOPE = "worldwide";
 
 const SUPABASE_URL = "https://lxawkhvkhbcdpermvqbc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4YXdraHZraGJjZHBlcm12cWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzMxMjIsImV4cCI6MjA5NjQ0OTEyMn0.nr4Xn2Phw8XNXJai99WUpjJgopL7rIxa1oBEo5ZWmJw";
@@ -916,7 +918,7 @@ let selectedMatchDateKey = "";
 let adminUnlocked = false;
 let countdownMatchId = "";
 let selectedTeamView = "groups";
-let leaderboardScope = "league";
+let leaderboardScope = DEFAULT_LEAGUE_ID;
 
 const els = {
   playerForm: document.querySelector("#player-form"),
@@ -938,8 +940,12 @@ const els = {
   matchTemplate: document.querySelector("#match-row-template"),
   leaderboardBody: document.querySelector("#leaderboard-body"),
   leaderboardCount: document.querySelector("#leaderboard-count"),
-  leaderboardScopeTabs: document.querySelectorAll(".leaderboard-scope-tab"),
+  leaderboardScopeTabs: document.querySelector("#leaderboard-scope-tabs"),
   leaderboardScopeSummary: document.querySelector("#leaderboard-scope-summary"),
+  joinLeaguePanel: document.querySelector("#join-league-panel"),
+  joinLeagueSelect: document.querySelector("#join-league-select"),
+  joinLeagueButton: document.querySelector("#join-league-button"),
+  joinLeagueMessage: document.querySelector("#join-league-message"),
   teamViewTabs: document.querySelectorAll(".team-view-tab"),
   teamsContent: document.querySelector("#teams-content"),
   pointsBreakdownList: document.querySelector("#points-breakdown-list"),
@@ -995,11 +1001,27 @@ els.teamViewTabs.forEach((tab) => {
   });
 });
 
-els.leaderboardScopeTabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    leaderboardScope = tab.dataset.leaderboardScope;
-    renderLeaderboard();
-  });
+els.leaderboardScopeTabs.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-leaderboard-scope]");
+  if (!tab) return;
+  leaderboardScope = tab.dataset.leaderboardScope;
+  renderLeaderboard();
+});
+
+els.joinLeagueButton.addEventListener("click", async () => {
+  const leagueId = normalizeLeagueId(els.joinLeagueSelect.value);
+  if (!activePlayerId || !leagueId) return;
+
+  els.joinLeagueMessage.textContent = "Joining league...";
+  try {
+    await joinPlayerLeague(activePlayerId, leagueId);
+    leaderboardScope = leagueId;
+    els.joinLeagueMessage.textContent = "";
+    render();
+  } catch (error) {
+    console.error(error);
+    els.joinLeagueMessage.textContent = error.message || "Could not join league.";
+  }
 });
 
 els.adminLoginForm.addEventListener("submit", async (event) => {
@@ -1036,6 +1058,7 @@ els.playerForm.addEventListener("submit", async (event) => {
   const username = els.playerUsername.value.trim();
   const displayName = els.playerDisplayName.value.trim();
   const leagueId = normalizeLeagueId(els.playerLeague.value);
+  const leagueIds = leagueId ? [leagueId] : [];
   if (!username || !displayName) return;
   const playerId = createPlayerId(username);
 
@@ -1049,6 +1072,7 @@ els.playerForm.addEventListener("submit", async (event) => {
     username,
     name: displayName,
     leagueId,
+    leagueIds,
     createdAt: new Date().toISOString(),
   };
 
@@ -1066,7 +1090,7 @@ els.playerForm.addEventListener("submit", async (event) => {
   els.createdPlayer.textContent = "";
   els.playerUsername.value = "";
   els.playerDisplayName.value = "";
-  els.playerLeague.value = "brum-family";
+  els.playerLeague.value = DEFAULT_LEAGUE_ID;
   closePlayerModal();
 });
 
@@ -1127,7 +1151,8 @@ function normalizeState(value) {
   Object.values(players).forEach((player) => {
     player.username = player.username || player.id;
     player.name = player.name || player.username || player.id;
-    player.leagueId = normalizeLeagueId(player.leagueId || player.league_id || "");
+    player.leagueIds = normalizeLeagueIds(player.leagueIds || player.league_ids || player.leagueId || player.league_id);
+    player.leagueId = player.leagueIds[0] || "";
   });
 
   return {
@@ -1199,7 +1224,8 @@ async function loadSupabaseState() {
       id: player.id,
       username: player.username,
       name: player.display_name,
-      leagueId: normalizeLeagueId(player.league_id),
+      leagueIds: normalizeLeagueIds(player.league_ids || player.league_id),
+      leagueId: normalizeLeagueIds(player.league_ids || player.league_id)[0] || "",
       createdAt: player.created_at,
     },
   ]));
@@ -1312,7 +1338,8 @@ async function savePlayer(player) {
     id: player.id,
     username: player.username,
     display_name: player.name,
-    league_id: player.leagueId || null,
+    league_id: player.leagueIds[0] || null,
+    league_ids: player.leagueIds,
   });
   if (error) {
     if (error.code === "23505") throw new Error("That username is already taken. Choose a different name.");
@@ -1442,7 +1469,7 @@ function setActivePlayer(playerId) {
   activePlayerId = playerId;
   viewedPredictionPlayerId = playerId;
   state.activePlayerId = playerId;
-  leaderboardScope = getPlayerLeagueId(playerId) ? "league" : "worldwide";
+  leaderboardScope = getPlayerLeagueIds(playerId)[0] || WORLDWIDE_SCOPE;
   saveState();
   render();
 }
@@ -1451,12 +1478,53 @@ function normalizeLeagueId(leagueId) {
   return LEAGUES[leagueId] ? leagueId : "";
 }
 
-function getPlayerLeagueId(playerId) {
-  return normalizeLeagueId(state.players[playerId]?.leagueId || "");
+function normalizeLeagueIds(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return [...new Set(values.map(normalizeLeagueId).filter(Boolean))];
+}
+
+function getPlayerLeagueIds(playerId) {
+  return normalizeLeagueIds(state.players[playerId]?.leagueIds || state.players[playerId]?.leagueId || "");
 }
 
 function leagueName(leagueId) {
   return LEAGUES[leagueId] || "";
+}
+
+function leagueNames(leagueIds) {
+  const names = normalizeLeagueIds(leagueIds).map(leagueName).filter(Boolean);
+  return names.length ? names.join(", ") : "";
+}
+
+function compactLeagueNames(leagueIds) {
+  const names = normalizeLeagueIds(leagueIds).map(leagueName).filter(Boolean);
+  if (names.length === 0) return "";
+  if (names.length === 1) return names[0];
+
+  const others = names.length - 1;
+  return `${names[0]} + ${others} other${others === 1 ? "" : "s"}`;
+}
+
+async function joinPlayerLeague(playerId, leagueId) {
+  const player = state.players[playerId];
+  if (!player) return;
+
+  const leagueIds = normalizeLeagueIds([...(player.leagueIds || []), leagueId]);
+  player.leagueIds = leagueIds;
+  player.leagueId = leagueIds[0] || "";
+  await savePlayerLeagues(player);
+}
+
+async function savePlayerLeagues(player) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient
+    .from("players")
+    .update({
+      league_id: player.leagueId || null,
+      league_ids: player.leagueIds,
+    })
+    .eq("id", player.id);
+  if (error) throw error;
 }
 
 function renderModalPlayerOptions() {
@@ -1469,11 +1537,7 @@ function renderModalPlayerOptions() {
   }
 
   els.modalPlayerSelect.innerHTML = players
-    .map((player) => {
-      const league = leagueName(player.leagueId);
-      const suffix = league ? ` - ${league}` : " - worldwide";
-      return `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})${escapeHtml(suffix)}</option>`;
-    })
+    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`)
     .join("");
   els.modalPlayerSelect.value = activePlayerId && state.players[activePlayerId] ? activePlayerId : players[0]?.id || "";
   els.modalPlayerSelect.disabled = false;
@@ -1515,9 +1579,9 @@ function renderAdminAccess() {
 
 function renderSummary() {
   const player = state.players[activePlayerId];
-  const league = player ? leagueName(player.leagueId) : "";
+  const leagues = player ? leagueNames(player.leagueIds) : "";
   els.activeSummary.textContent = player
-    ? `Predicting as ${player.name} (${player.id})${league ? ` in ${league}` : " with worldwide ranking only"}.`
+    ? `Predicting as ${player.name} (${player.id})${leagues ? ` in ${leagues}` : " with worldwide ranking only"}.`
     : "Create or select your player, then predict each score before the one-hour lockout.";
   els.playerNavLabel.textContent = player ? "" : "Create player";
   els.activePlayerName.textContent = player ? player.name : "";
@@ -1839,26 +1903,32 @@ function updateAutosaveMessage(form, message) {
 }
 
 function renderLeaderboard() {
-  const activeLeagueId = getPlayerLeagueId(activePlayerId);
-  if (leaderboardScope === "league" && !activeLeagueId) {
-    leaderboardScope = "worldwide";
+  const activeLeagueIds = getPlayerLeagueIds(activePlayerId);
+  if (leaderboardScope !== WORLDWIDE_SCOPE && !activeLeagueIds.includes(leaderboardScope)) {
+    leaderboardScope = activeLeagueIds[0] || WORLDWIDE_SCOPE;
   }
 
-  els.leaderboardScopeTabs.forEach((tab) => {
-    const isLeagueTab = tab.dataset.leaderboardScope === "league";
-    tab.classList.toggle("active", tab.dataset.leaderboardScope === leaderboardScope);
-    tab.disabled = isLeagueTab && !activeLeagueId;
-  });
+  const scopes = [
+    ...activeLeagueIds.map((leagueId) => [leagueId, leagueName(leagueId)]),
+    [WORLDWIDE_SCOPE, "Worldwide"],
+  ];
+
+  els.leaderboardScopeTabs.innerHTML = scopes.map(([scope, label]) => `
+    <button class="leaderboard-scope-tab ${leaderboardScope === scope ? "active" : ""}" type="button" data-leaderboard-scope="${escapeHtml(scope)}">
+      ${escapeHtml(label)}
+    </button>
+  `).join("");
+
+  renderJoinLeagueControls(activeLeagueIds);
 
   const rows = Object.values(state.players)
-    .filter((player) => leaderboardScope === "worldwide" || player.leagueId === activeLeagueId)
+    .filter((player) => leaderboardScope === WORLDWIDE_SCOPE || getPlayerLeagueIds(player.id).includes(leaderboardScope))
     .map((player) => ({ player, stats: calculatePlayerStats(player.id) }))
     .sort((a, b) => b.stats.points - a.stats.points || b.stats.correctPredictions - a.stats.correctPredictions);
 
-  const scopeName = leaderboardScope === "league" ? leagueName(activeLeagueId) : "Worldwide";
   els.leaderboardCount.textContent = `${rows.length} players`;
-  els.leaderboardScopeSummary.textContent = leaderboardScope === "league"
-    ? `Showing ${scopeName} rankings.`
+  els.leaderboardScopeSummary.textContent = leaderboardScope !== WORLDWIDE_SCOPE
+    ? `Showing ${leagueName(leaderboardScope)} rankings.`
     : "Showing every player across all leagues and players without a league.";
   els.leaderboardBody.innerHTML = rows
     .map(
@@ -1868,7 +1938,7 @@ function renderLeaderboard() {
           <td>
             <strong class="leaderboard-name">${escapeHtml(row.player.name)}</strong>
             <span class="leaderboard-id">${escapeHtml(row.player.id)}</span>
-            <span class="leaderboard-league">${escapeHtml(leagueName(row.player.leagueId) || "Worldwide only")}</span>
+            ${leaderboardLeagueHtml(row.player.leagueIds)}
           </td>
           <td><strong class="leaderboard-points">${row.stats.points}</strong></td>
           <td>${row.stats.correctPredictions}</td>
@@ -1876,7 +1946,30 @@ function renderLeaderboard() {
         </tr>
       `,
     )
-    .join("") || `<tr><td colspan="5" class="muted">${leaderboardScope === "league" ? "No players in this league yet." : "No players yet."}</td></tr>`;
+    .join("") || `<tr><td colspan="5" class="muted">${leaderboardScope !== WORLDWIDE_SCOPE ? "No players in this league yet." : "No players yet."}</td></tr>`;
+}
+
+function leaderboardLeagueHtml(leagueIds) {
+  const fullLabel = leagueNames(leagueIds) || "Worldwide only";
+  const compactLabel = compactLeagueNames(leagueIds) || "Worldwide only";
+  const showTooltip = fullLabel !== compactLabel;
+
+  return `
+    <span class="leaderboard-league ${showTooltip ? "has-tooltip" : ""}" ${showTooltip ? 'tabindex="0"' : ""}>
+      ${escapeHtml(compactLabel)}
+      ${showTooltip ? `<span class="league-tooltip">${escapeHtml(fullLabel)}</span>` : ""}
+    </span>
+  `;
+}
+
+function renderJoinLeagueControls(activeLeagueIds) {
+  const availableLeagues = Object.entries(LEAGUES).filter(([leagueId]) => !activeLeagueIds.includes(leagueId));
+  els.joinLeaguePanel.hidden = !activePlayerId || availableLeagues.length === 0;
+  if (els.joinLeaguePanel.hidden) return;
+
+  els.joinLeagueSelect.innerHTML = availableLeagues
+    .map(([leagueId, name]) => `<option value="${escapeHtml(leagueId)}">${escapeHtml(name)}</option>`)
+    .join("");
 }
 
 function renderTeams() {
@@ -2246,7 +2339,7 @@ function renderUsersAdmin() {
         <article class="user-admin-row">
           <div>
             <strong>${escapeHtml(player.name)}</strong>
-            <p class="muted">${escapeHtml(player.id)} - ${escapeHtml(leagueName(player.leagueId) || "Worldwide only")} - ${stats.points} pts - ${predictionCount} predictions</p>
+            <p class="muted">${escapeHtml(player.id)} - ${escapeHtml(leagueNames(player.leagueIds) || "Worldwide only")} - ${stats.points} pts - ${predictionCount} predictions</p>
           </div>
           <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
         </article>

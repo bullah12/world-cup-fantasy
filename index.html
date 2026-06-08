@@ -134,11 +134,16 @@
               <span id="leaderboard-count" class="pill"></span>
             </div>
             <div class="leaderboard-controls">
-              <div class="leaderboard-scope-tabs" aria-label="Leaderboard scope">
-                <button class="leaderboard-scope-tab active" type="button" data-leaderboard-scope="league">My league</button>
-                <button class="leaderboard-scope-tab" type="button" data-leaderboard-scope="worldwide">Worldwide</button>
-              </div>
+              <div id="leaderboard-scope-tabs" class="leaderboard-scope-tabs" aria-label="Leaderboard scope"></div>
               <p id="leaderboard-scope-summary" class="muted"></p>
+            </div>
+            <div id="join-league-panel" class="join-league-panel" hidden>
+              <label for="join-league-select">
+                Join another league
+                <select id="join-league-select"></select>
+              </label>
+              <button id="join-league-button" type="button">Join league</button>
+              <p id="join-league-message" class="muted"></p>
             </div>
             <div class="table-wrap">
               <table>
