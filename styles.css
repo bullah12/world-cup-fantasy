@@ -79,8 +79,8 @@ main {
 
 .hero {
   background:
-    linear-gradient(120deg, rgba(9, 87, 65, 0.92), rgba(15, 123, 95, 0.78)),
-    url("https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1800&q=80");
+    linear-gradient(120deg, rgba(9, 35, 28, 0.9), rgba(15, 123, 95, 0.45)),
+    url("assets/world-cup-hero-treated.png");
   background-position: center;
   background-size: cover;
   color: #fff;
