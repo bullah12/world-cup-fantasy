@@ -931,6 +931,7 @@ let countdownMatchId = "";
 let selectedTeamView = "groups";
 let leaderboardScope = DEFAULT_LEAGUE_ID;
 let selectedModelVersion = "";
+let selectedAdminSection = "results";
 
 let modelPredictions = [];
 const recentPredictionHistoryWrites = new Map();
@@ -982,6 +983,8 @@ const els = {
   adminEmail: document.querySelector("#admin-email"),
   adminPassword: document.querySelector("#admin-password"),
   adminLoginMessage: document.querySelector("#admin-login-message"),
+  adminSectionTabs: document.querySelectorAll("[data-admin-section]"),
+  adminPanels: document.querySelectorAll("[data-admin-panel]"),
   leagueAdminForm: document.querySelector("#league-admin-form"),
   leagueName: document.querySelector("#league-name"),
   leagueAdminMessage: document.querySelector("#league-admin-message"),
@@ -1000,6 +1003,10 @@ els.predictionPlayerSelect.addEventListener("change", () => {
 els.modelVersionSelect.addEventListener("change", () => {
   selectedModelVersion = els.modelVersionSelect.value;
   renderStats();
+});
+
+els.playerLeague.addEventListener("change", () => {
+  if (!els.playerModal.hidden) renderModalPlayerOptions();
 });
 
 els.playerNavButton.addEventListener("click", () => {
@@ -1053,6 +1060,13 @@ els.teamViewTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     selectedTeamView = tab.dataset.teamView;
     renderTeams();
+  });
+});
+
+els.adminSectionTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    selectedAdminSection = tab.dataset.adminSection;
+    renderAdminSections();
   });
 });
 
@@ -1897,14 +1911,23 @@ async function updatePlayerLastLoggedIn(playerId) {
 function renderModalPlayerOptions() {
   els.modalPlayerPassword.value = "";
   els.modalLoginMessage.textContent = "";
-  const players = Object.values(state.players).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  const selectedLeague = normalizeLeagueId(els.playerLeague.value);
+  const players = Object.values(state.players)
+    .filter((player) => {
+      const leagueIds = getPlayerLeagueIds(player.id);
+      return selectedLeague
+        ? leagueIds.includes(selectedLeague)
+        : leagueIds.length === 0;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
   if (players.length === 0) {
-    els.modalPlayerSelect.innerHTML = `<option>No players yet</option>`;
+    els.modalPlayerSelect.innerHTML = `<option>No players in this league</option>`;
     els.modalPlayerSelect.disabled = true;
     els.modalPlayerPassword.disabled = true;
     els.modalLoginPlayer.disabled = true;
+    els.modalLoginMessage.textContent = selectedLeague
+      ? "No existing players found in this league."
+      : "No worldwide-only players found.";
     return;
   }
 
@@ -1955,6 +1978,7 @@ function render() {
   renderPointsBreakdown();
   renderPlayerPredictions();
   renderAdminAccess();
+  renderAdminSections();
   renderResultsAdmin();
   renderConfig();
   renderLeaguesAdmin();
@@ -1975,6 +1999,15 @@ function showView(viewId) {
 function renderAdminAccess() {
   els.adminLogin.hidden = adminUnlocked;
   els.adminContent.hidden = !adminUnlocked;
+}
+
+function renderAdminSections() {
+  els.adminSectionTabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.adminSection === selectedAdminSection);
+  });
+  els.adminPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.adminPanel === selectedAdminSection);
+  });
 }
 
 function renderSummary() {
@@ -3463,19 +3496,38 @@ function renderUsersAdmin() {
     players
       .map((player) => {
         const stats = calculatePlayerStats(player.id);
+        const playerLeagueIds = getPlayerLeagueIds(player.id);
         const predictionCount = Object.values(state.predictions).filter(
           (prediction) => prediction.playerId === player.id,
         ).length;
         const lastLoggedIn = player.lastLoggedIn
           ? formatDate(new Date(player.lastLoggedIn))
           : "Never logged";
+        const removeLeagueControl = playerLeagueIds.length
+          ? `
+            <form class="kick-league-form" data-player-id="${escapeHtml(player.id)}">
+              <select name="leagueId" aria-label="League to remove">
+                ${playerLeagueIds
+                  .map(
+                    (leagueId) =>
+                      `<option value="${escapeHtml(leagueId)}">${escapeHtml(leagueName(leagueId))}</option>`,
+                  )
+                  .join("")}
+              </select>
+              <button class="danger-button" type="submit">Remove league</button>
+            </form>
+          `
+          : "";
         return `
         <article class="user-admin-row">
           <div>
             <strong>${escapeHtml(player.name)}</strong>
             <p class="muted">${escapeHtml(player.id)} - ${escapeHtml(leagueNames(player.leagueIds) || "Worldwide only")} - ${stats.points} pts - ${predictionCount} predictions - Last login: ${escapeHtml(lastLoggedIn)}</p>
           </div>
-          <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
+          <div class="user-admin-actions">
+            ${removeLeagueControl}
+            <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
+          </div>
         </article>
       `;
       })
@@ -3486,6 +3538,29 @@ function renderUsersAdmin() {
       deleteUser(button.dataset.playerId);
     });
   });
+
+  els.usersAdmin.querySelectorAll(".kick-league-form").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      kickPlayerFromLeague(form.dataset.playerId, form.elements.leagueId.value);
+    });
+  });
+}
+
+async function kickPlayerFromLeague(playerId, leagueId) {
+  const player = state.players[playerId];
+  if (!player || !normalizeLeagueId(leagueId)) return;
+
+  const confirmed = window.confirm(
+    `Remove ${player.name} from ${leagueName(leagueId)}?`,
+  );
+  if (!confirmed) return;
+
+  await leavePlayerLeague(playerId, leagueId);
+  if (leaderboardScope === leagueId && playerId === activePlayerId) {
+    leaderboardScope = getPlayerLeagueIds(playerId)[0] || WORLDWIDE_SCOPE;
+  }
+  render();
 }
 
 async function deleteUser(playerId) {

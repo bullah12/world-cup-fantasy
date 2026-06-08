@@ -255,6 +255,10 @@ nav a {
   padding-bottom: 1rem;
 }
 
+.player-access-league {
+  margin-top: 1rem;
+}
+
 .existing-player-panel h3,
 .player-modal-form h3 {
   font-size: 1rem;
@@ -1518,6 +1522,25 @@ th {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.user-admin-actions,
+.kick-league-form {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.kick-league-form select {
+  min-width: 140px;
+  padding: 0.55rem 0.65rem;
+}
+
+.kick-league-form button,
+.user-admin-actions > button {
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+
 .admin-score-label > .flag,
 .admin-score-label > .team-name {
   vertical-align: middle;
@@ -1560,10 +1583,6 @@ th {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.admin-layout {
-  grid-template-columns: minmax(0, 1fr) 360px;
-}
-
 .admin-login,
 .admin-content {
   margin: -2.2rem auto 0;
@@ -1572,8 +1591,38 @@ th {
   z-index: 2;
 }
 
-.admin-content .admin-layout {
-  margin-top: 0;
+.admin-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-section-tabs {
+  background: #e7ede5;
+  border-radius: 8px;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  width: fit-content;
+}
+
+.admin-section-tab {
+  background: transparent;
+  color: var(--accent-dark);
+  padding: 0.6rem 0.85rem;
+}
+
+.admin-section-tab:hover,
+.admin-section-tab.active {
+  background: #fff;
+  color: var(--accent-dark);
+}
+
+.admin-panel {
+  display: none;
+}
+
+.admin-panel.active {
+  display: block;
 }
 
 .site-footer {
@@ -1604,7 +1653,6 @@ th {
   .hero-grid,
   nav,
   .layout,
-  .admin-layout,
   .match-grid {
     grid-template-columns: 1fr;
   }
@@ -1736,6 +1784,15 @@ th {
     width: 100%;
   }
 
+  .admin-section-tabs {
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  .admin-section-tab {
+    flex: 1 0 auto;
+  }
+
   .leaderboard-scope-tab {
     flex: 1 1 0;
   }
@@ -1761,6 +1818,12 @@ th {
   .user-admin-row,
   .config-grid {
     grid-template-columns: 1fr;
+  }
+
+  .user-admin-actions,
+  .kick-league-form {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .score-divider {

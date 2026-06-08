@@ -50,6 +50,16 @@
           <h2 id="player-modal-title">Player access</h2>
           <button id="close-player-modal" class="secondary icon-button" type="button" aria-label="Close">&times;</button>
         </div>
+        <label class="player-access-league" for="player-league">
+          <span class="label-with-help">
+            League
+            <button class="help-tooltip mobile-tooltip-trigger" type="button" aria-label="League help" aria-expanded="false">
+              ?
+              <span class="mobile-tooltip">If you'd like a league added, contact Abdullah Taj to add the league for you.</span>
+            </button>
+          </span>
+          <select id="player-league" name="player-league"></select>
+        </label>
         <section class="existing-player-panel">
           <h3>Existing player</h3>
           <div class="modal-login-row">
@@ -74,16 +84,6 @@
             <input id="player-password" name="player-password" type="password" autocomplete="new-password" minlength="4" required />
           </label>
           <p class="muted">This helps stop other players logging in as you and changing your predictions.</p>
-          <label for="player-league">
-            <span class="label-with-help">
-              League
-              <button class="help-tooltip mobile-tooltip-trigger" type="button" aria-label="League help" aria-expanded="false">
-                ?
-                <span class="mobile-tooltip">If you'd like a league added, contact Abdullah Taj to add the league for you.</span>
-              </button>
-            </span>
-            <select id="player-league" name="player-league"></select>
-          </label>
           <button type="submit">Create player</button>
           <p id="created-player" class="muted"></p>
         </form>
@@ -235,8 +235,15 @@
         </section>
 
         <section id="admin-content" class="admin-content" hidden>
-          <section class="layout admin-layout">
-            <section class="panel">
+          <section class="admin-page">
+            <div class="admin-section-tabs" aria-label="Admin sections">
+              <button class="admin-section-tab active" type="button" data-admin-section="results">Results</button>
+              <button class="admin-section-tab" type="button" data-admin-section="parameters">Parameters</button>
+              <button class="admin-section-tab" type="button" data-admin-section="leagues">Leagues</button>
+              <button class="admin-section-tab" type="button" data-admin-section="users">Users</button>
+            </div>
+
+            <section class="panel admin-panel active" data-admin-panel="results">
               <div class="section-head small">
                 <h2>Results admin</h2>
                 <span class="pill">Local app</span>
@@ -247,33 +254,31 @@
               <div id="results-admin" class="admin-list"></div>
             </section>
 
-            <div class="side-stack">
-              <section class="panel">
-                <h2>Scoring parameters</h2>
-                <div id="scoring-config" class="config-grid"></div>
-                <button id="save-config">Save scoring</button>
-              </section>
+            <section class="panel admin-panel" data-admin-panel="parameters">
+              <h2>Scoring parameters</h2>
+              <div id="scoring-config" class="config-grid"></div>
+              <button id="save-config">Save scoring</button>
+            </section>
 
-              <section class="panel">
-                <h2>Leagues</h2>
-                <p class="muted">Create leagues that players can join from the leaderboard.</p>
-                <form id="league-admin-form" class="inline-form">
-                  <label for="league-name">
-                    League name
-                    <input id="league-name" name="league-name" autocomplete="off" required />
-                  </label>
-                  <button type="submit">Create league</button>
-                </form>
-                <p id="league-admin-message" class="muted"></p>
-                <div id="leagues-admin" class="admin-list"></div>
-              </section>
+            <section class="panel admin-panel" data-admin-panel="leagues">
+              <h2>Leagues</h2>
+              <p class="muted">Create leagues that players can join from the leaderboard.</p>
+              <form id="league-admin-form" class="inline-form">
+                <label for="league-name">
+                  League name
+                  <input id="league-name" name="league-name" autocomplete="off" required />
+                </label>
+                <button type="submit">Create league</button>
+              </form>
+              <p id="league-admin-message" class="muted"></p>
+              <div id="leagues-admin" class="admin-list"></div>
+            </section>
 
-              <section class="panel">
-                <h2>Delete users</h2>
-                <p class="muted">Deleting a user also removes all of their saved predictions.</p>
-                <div id="users-admin" class="admin-list"></div>
-              </section>
-            </div>
+            <section class="panel admin-panel" data-admin-panel="users">
+              <h2>Users</h2>
+              <p class="muted">Manage player league access or delete users and their saved predictions.</p>
+              <div id="users-admin" class="admin-list"></div>
+            </section>
           </section>
         </section>
       </section>
