@@ -3,6 +3,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client
 
+from team_name_mapper import canonical_team_name
+
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -16,7 +18,7 @@ supabase = create_client(
     SUPABASE_SERVICE_KEY
 )
 
-df = pd.read_csv("data/eloratings.csv")
+df = pd.read_csv("data/eloratings.csv", encoding="latin1")
 
 df = df.rename(columns={
     "date": "rating_date",
@@ -37,12 +39,19 @@ df["rating_date"] = pd.to_datetime(
     format="mixed",
     errors="coerce"
 ).dt.date.astype(str)
-df["team_name"] = df["team_name"].astype(str).str.strip()
+df["team_name"] = df["team_name"].apply(canonical_team_name)
 df["elo_rating"] = pd.to_numeric(df["elo_rating"], errors="coerce")
 
 df = df.dropna(subset=["rating_date", "team_name", "elo_rating"])
 
 df["source"] = "eloratings_csv"
+
+# Remove duplicates created by team-name mapping
+df = df.sort_values(["rating_date", "team_name"])
+df = df.drop_duplicates(
+    subset=["rating_date", "team_name"],
+    keep="last"
+)
 
 records = df.to_dict("records")
 

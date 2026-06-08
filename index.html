@@ -17,6 +17,7 @@
           <button class="nav-tab active" type="button" data-view-target="main-view">Home</button>
           <button class="nav-tab" type="button" data-view-target="leaderboard-view">Leaderboard</button>
           <button class="nav-tab" type="button" data-view-target="teams-view">Teams</button>
+          <button class="nav-tab" type="button" data-view-target="stats-view">Stats</button>
         </div>
         <div class="nav-player">
           <button id="player-nav-button" class="player-nav-button" type="button">
@@ -68,11 +69,7 @@
           </label>
           <label for="player-league">
             League
-            <select id="player-league" name="player-league">
-              <option value="">No league - worldwide only</option>
-              <option value="brum-family" selected>Brum Family</option>
-              <option value="summer2k">summer2k</option>
-            </select>
+            <select id="player-league" name="player-league"></select>
           </label>
           <button type="submit">Create player</button>
           <p id="created-player" class="muted"></p>
@@ -137,17 +134,6 @@
               <div id="leaderboard-scope-tabs" class="leaderboard-scope-tabs" aria-label="Leaderboard scope"></div>
               <p id="leaderboard-scope-summary" class="muted"></p>
             </div>
-            <div id="join-league-panel" class="join-league-panel" hidden>
-              <label for="join-league-select">
-                Join another league
-                <select id="join-league-select"></select>
-              </label>
-              <button id="join-league-button" type="button">Join league</button>
-              <p id="join-league-message" class="muted"></p>
-            </div>
-            <div class="leaderboard-actions">
-              <button id="leave-league-button" class="danger-button" type="button" hidden>Leave league</button>
-            </div>
             <div class="table-wrap">
               <table>
                 <thead>
@@ -161,6 +147,19 @@
                 </thead>
                 <tbody id="leaderboard-body"></tbody>
               </table>
+            </div>
+            <div class="leaderboard-league-tools">
+              <div id="join-league-panel" class="join-league-panel" hidden>
+                <label for="join-league-select">
+                  Join another league
+                  <select id="join-league-select"></select>
+                </label>
+                <button id="join-league-button" type="button">Join league</button>
+                <p id="join-league-message" class="muted"></p>
+              </div>
+              <div class="leaderboard-actions">
+                <button id="leave-league-button" class="danger-button" type="button" hidden>Leave league</button>
+              </div>
             </div>
           </section>
         </section>
@@ -180,6 +179,22 @@
               </div>
             </div>
             <div id="teams-content" class="teams-content"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="stats-view" class="app-view">
+        <section class="teams-page">
+          <section class="panel">
+            <div class="section-head small">
+              <div>
+                <p class="eyebrow">Model predictions</p>
+                <h2>Stats & Predictions</h2>
+              </div>
+            </div>
+
+            <div id="stats-summary" class="stats-grid"></div>
+            <div id="match-predictions" class="stats-list"></div>
           </section>
         </section>
       </section>
@@ -220,6 +235,20 @@
                 <h2>Scoring parameters</h2>
                 <div id="scoring-config" class="config-grid"></div>
                 <button id="save-config">Save scoring</button>
+              </section>
+
+              <section class="panel">
+                <h2>Leagues</h2>
+                <p class="muted">Create leagues that players can join from the leaderboard.</p>
+                <form id="league-admin-form" class="inline-form">
+                  <label for="league-name">
+                    League name
+                    <input id="league-name" name="league-name" autocomplete="off" required />
+                  </label>
+                  <button type="submit">Create league</button>
+                </form>
+                <p id="league-admin-message" class="muted"></p>
+                <div id="leagues-admin" class="admin-list"></div>
               </section>
 
               <section class="panel">

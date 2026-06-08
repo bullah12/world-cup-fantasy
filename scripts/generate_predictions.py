@@ -1,7 +1,10 @@
 import os
 import math
+from re import match
 from dotenv import load_dotenv
 from supabase import create_client
+
+from team_name_mapper import canonical_team_name
 
 load_dotenv()
 
@@ -77,8 +80,8 @@ def estimate_expected_goals(home_team, away_team, ratings):
 
 
 def predict_match(match, ratings):
-    home_team = match["home_team"]
-    away_team = match["away_team"]
+    home_team = canonical_team_name(match["home_team"])
+    away_team = canonical_team_name(match["away_team"])
 
     home_expected_goals, away_expected_goals = estimate_expected_goals(
         home_team,
@@ -222,6 +225,19 @@ def main():
         )
 
     print("Predictions generated successfully.")
+
+    missing_elo_teams = [
+    team
+    for team in set(
+        [m["home_team"] for m in matches] +
+        [m["away_team"] for m in matches]
+    )
+    if canonical_team_name(team) not in ratings
+    and "Match" not in team
+    and "Group" not in team
+    ]
+
+    print("Missing Elo teams:", missing_elo_teams)
 
 
 if __name__ == "__main__":

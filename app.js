@@ -7,7 +7,7 @@ const DEFAULT_CONFIG = {
   },
 };
 
-const LEAGUES = {
+const DEFAULT_LEAGUES = {
   "brum-family": "Brum Family",
   summer2k: "summer2k",
 };
@@ -15,8 +15,12 @@ const DEFAULT_LEAGUE_ID = "brum-family";
 const WORLDWIDE_SCOPE = "worldwide";
 
 const SUPABASE_URL = "https://lxawkhvkhbcdpermvqbc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4YXdraHZraGJjZHBlcm12cWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzMxMjIsImV4cCI6MjA5NjQ0OTEyMn0.nr4Xn2Phw8XNXJai99WUpjJgopL7rIxa1oBEo5ZWmJw";
-const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4YXdraHZraGJjZHBlcm12cWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzMxMjIsImV4cCI6MjA5NjQ0OTEyMn0.nr4Xn2Phw8XNXJai99WUpjJgopL7rIxa1oBEo5ZWmJw";
+const supabaseClient = window.supabase?.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+);
 
 const MATCHES = [
   {
@@ -854,54 +858,54 @@ const MATCHES = [
 ];
 
 const TEAM_FLAG_CODES = {
-  "Algeria": "dz",
-  "Argentina": "ar",
-  "Australia": "au",
-  "Austria": "at",
-  "Belgium": "be",
+  Algeria: "dz",
+  Argentina: "ar",
+  Australia: "au",
+  Austria: "at",
+  Belgium: "be",
   "Bosnia and Herzegovina": "ba",
-  "Brazil": "br",
+  Brazil: "br",
   "Cabo Verde": "cv",
-  "Canada": "ca",
-  "Colombia": "co",
+  Canada: "ca",
+  Colombia: "co",
   "Congo DR": "cd",
-  "Croatia": "hr",
-  "Curaçao": "cw",
-  "Czechia": "cz",
+  Croatia: "hr",
+  Curaçao: "cw",
+  Czechia: "cz",
   "Côte d’Ivoire": "ci",
-  "Ecuador": "ec",
-  "Egypt": "eg",
-  "England": "gb-eng",
-  "France": "fr",
-  "Germany": "de",
-  "Ghana": "gh",
-  "Haiti": "ht",
-  "Iran": "ir",
-  "Iraq": "iq",
-  "Japan": "jp",
-  "Jordan": "jo",
+  Ecuador: "ec",
+  Egypt: "eg",
+  England: "gb-eng",
+  France: "fr",
+  Germany: "de",
+  Ghana: "gh",
+  Haiti: "ht",
+  Iran: "ir",
+  Iraq: "iq",
+  Japan: "jp",
+  Jordan: "jo",
   "Korea Republic": "kr",
-  "Mexico": "mx",
-  "Morocco": "ma",
-  "Netherlands": "nl",
+  Mexico: "mx",
+  Morocco: "ma",
+  Netherlands: "nl",
   "New Zealand": "nz",
-  "Norway": "no",
-  "Panama": "pa",
-  "Paraguay": "py",
-  "Portugal": "pt",
-  "Qatar": "qa",
+  Norway: "no",
+  Panama: "pa",
+  Paraguay: "py",
+  Portugal: "pt",
+  Qatar: "qa",
   "Saudi Arabia": "sa",
-  "Scotland": "gb-sct",
-  "Senegal": "sn",
+  Scotland: "gb-sct",
+  Senegal: "sn",
   "South Africa": "za",
-  "Spain": "es",
-  "Sweden": "se",
-  "Switzerland": "ch",
-  "Tunisia": "tn",
-  "Türkiye": "tr",
+  Spain: "es",
+  Sweden: "se",
+  Switzerland: "ch",
+  Tunisia: "tn",
+  Türkiye: "tr",
   "United States": "us",
-  "Uruguay": "uy",
-  "Uzbekistan": "uz",
+  Uruguay: "uy",
+  Uzbekistan: "uz",
 };
 
 const STORAGE_KEY = "fantasyWorldCup2026";
@@ -919,6 +923,8 @@ let adminUnlocked = false;
 let countdownMatchId = "";
 let selectedTeamView = "groups";
 let leaderboardScope = DEFAULT_LEAGUE_ID;
+
+let modelPredictions = [];
 
 const els = {
   playerForm: document.querySelector("#player-form"),
@@ -964,7 +970,13 @@ const els = {
   adminEmail: document.querySelector("#admin-email"),
   adminPassword: document.querySelector("#admin-password"),
   adminLoginMessage: document.querySelector("#admin-login-message"),
+  leagueAdminForm: document.querySelector("#league-admin-form"),
+  leagueName: document.querySelector("#league-name"),
+  leagueAdminMessage: document.querySelector("#league-admin-message"),
+  leaguesAdmin: document.querySelector("#leagues-admin"),
   usersAdmin: document.querySelector("#users-admin"),
+  statsSummary: document.querySelector("#stats-summary"),
+  matchPredictions: document.querySelector("#match-predictions"),
 };
 
 els.predictionPlayerSelect.addEventListener("change", () => {
@@ -1021,7 +1033,8 @@ els.joinLeagueButton.addEventListener("click", async () => {
     render();
   } catch (error) {
     console.error(error);
-    els.joinLeagueMessage.textContent = error.message || "Could not join league.";
+    els.joinLeagueMessage.textContent =
+      error.message || "Could not join league.";
   }
 });
 
@@ -1067,7 +1080,27 @@ els.adminLoginForm.addEventListener("submit", async (event) => {
     render();
   } catch (error) {
     adminUnlocked = false;
-    els.adminLoginMessage.textContent = error.message || "Admin sign in failed.";
+    els.adminLoginMessage.textContent =
+      error.message || "Admin sign in failed.";
+  }
+});
+
+els.leagueAdminForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!adminUnlocked) return;
+
+  const name = els.leagueName.value.trim();
+  if (!name) return;
+
+  try {
+    await createLeague(name);
+    els.leagueName.value = "";
+    els.leagueAdminMessage.textContent = `${name} is ready for players to join.`;
+    render();
+  } catch (error) {
+    console.error(error);
+    els.leagueAdminMessage.textContent =
+      error.message || "Could not create league.";
   }
 });
 
@@ -1081,7 +1114,8 @@ els.playerForm.addEventListener("submit", async (event) => {
   const playerId = createPlayerId(username);
 
   if (findExistingPlayerId(playerId)) {
-    els.createdPlayer.textContent = "That username is already taken. Choose a different name.";
+    els.createdPlayer.textContent =
+      "That username is already taken. Choose a different name.";
     return;
   }
 
@@ -1117,7 +1151,9 @@ els.saveConfig.addEventListener("click", async () => {
   els.scoringConfig.querySelectorAll("input").forEach((input) => {
     const value = Number(input.value);
     if (input.name === "lockMinutesBeforeKickoff") {
-      state.config.lockMinutesBeforeKickoff = Number.isFinite(value) ? value : DEFAULT_CONFIG.lockMinutesBeforeKickoff;
+      state.config.lockMinutesBeforeKickoff = Number.isFinite(value)
+        ? value
+        : DEFAULT_CONFIG.lockMinutesBeforeKickoff;
       return;
     }
     nextPoints[input.name] = Number.isFinite(value) ? value : 0;
@@ -1142,7 +1178,10 @@ document.addEventListener("click", (event) => {
 
   event.preventDefault();
   tooltipButton.classList.toggle("tooltip-open");
-  tooltipButton.setAttribute("aria-expanded", String(tooltipButton.classList.contains("tooltip-open")));
+  tooltipButton.setAttribute(
+    "aria-expanded",
+    String(tooltipButton.classList.contains("tooltip-open")),
+  );
 });
 
 function loadState() {
@@ -1158,6 +1197,7 @@ function loadState() {
 
 function normalizeState(value) {
   const players = value.players || {};
+  const leagues = normalizeLeagues(value.leagues);
   const savedPoints = (value.config && value.config.points) || {};
   const points = Object.fromEntries(
     Object.keys(DEFAULT_CONFIG.points).map((key) => [
@@ -1169,11 +1209,18 @@ function normalizeState(value) {
   Object.values(players).forEach((player) => {
     player.username = player.username || player.id;
     player.name = player.name || player.username || player.id;
-    player.leagueIds = normalizeLeagueIds(player.leagueIds || player.league_ids || player.leagueId || player.league_id);
+    player.leagueIds = normalizeLeagueIds(
+      player.leagueIds ||
+        player.league_ids ||
+        player.leagueId ||
+        player.league_id,
+      leagues,
+    );
     player.leagueId = player.leagueIds[0] || "";
   });
 
   return {
+    leagues,
     players,
     predictions: value.predictions || {},
     results: value.results || {},
@@ -1187,16 +1234,21 @@ function normalizeState(value) {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    activePlayerId: state.activePlayerId,
-    config: state.config,
-  }));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      activePlayerId: state.activePlayerId,
+      config: state.config,
+      leagues: state.leagues,
+    }),
+  );
 }
 
 async function initializeApp() {
   render();
   if (!supabaseClient) {
-    els.activeSummary.textContent = "Supabase client could not load. Using local browser data only.";
+    els.activeSummary.textContent =
+      "Supabase client could not load. Using local browser data only.";
     return;
   }
 
@@ -1206,7 +1258,8 @@ async function initializeApp() {
     setupRealtimeSync();
   } catch (error) {
     console.error(error);
-    els.activeSummary.textContent = "Could not load Supabase data. Check your project tables and connection.";
+    els.activeSummary.textContent =
+      "Could not load Supabase data. Check your project tables and connection.";
   }
   render();
 }
@@ -1228,52 +1281,74 @@ async function checkAdminAccess() {
 async function loadSupabaseState() {
   await seedSupabaseDefaults();
 
-  const [players, matches, predictions, results, settings] = await Promise.all([
-    supabaseSelect("players"),
-    supabaseSelect("matches"),
-    supabaseSelect("predictions"),
-    supabaseSelect("results"),
-    supabaseSelect("app_settings"),
-  ]);
+  const [players, matches, predictions, results, settings, matchPredictions] =
+    await Promise.all([
+      supabaseSelect("players"),
+      supabaseSelect("matches"),
+      supabaseSelect("predictions"),
+      supabaseSelect("results"),
+      supabaseSelect("app_settings"),
+      supabaseSelect("match_predictions"),
+    ]);
 
-  state.players = Object.fromEntries(players.map((player) => [
-    player.id,
-    {
-      id: player.id,
-      username: player.username,
-      name: player.display_name,
-      leagueIds: normalizeLeagueIds(player.league_ids || player.league_id),
-      leagueId: normalizeLeagueIds(player.league_ids || player.league_id)[0] || "",
-      createdAt: player.created_at,
-    },
-  ]));
+  modelPredictions = matchPredictions || [];
+  console.log("Loaded model predictions:", modelPredictions);
+
+  const leaguesSetting = settings.find((setting) => setting.key === "leagues");
+  if (leaguesSetting?.value) {
+    state.leagues = normalizeLeagues(leaguesSetting.value);
+  }
+
+  state.players = Object.fromEntries(
+    players.map((player) => [
+      player.id,
+      {
+        id: player.id,
+        username: player.username,
+        name: player.display_name,
+        leagueIds: normalizeLeagueIds(player.league_ids || player.league_id),
+        leagueId:
+          normalizeLeagueIds(player.league_ids || player.league_id)[0] || "",
+        createdAt: player.created_at,
+      },
+    ]),
+  );
 
   matchesData = mergeMatchesWithDefaults(matches);
 
-  state.predictions = Object.fromEntries(predictions.map((prediction) => [
-    predictionKey(prediction.player_id, prediction.match_id),
-    {
-      playerId: prediction.player_id,
-      matchId: prediction.match_id,
-      homeScore: prediction.home_score,
-      awayScore: prediction.away_score,
-      updatedAt: prediction.updated_at,
-    },
-  ]));
+  state.predictions = Object.fromEntries(
+    predictions.map((prediction) => [
+      predictionKey(prediction.player_id, prediction.match_id),
+      {
+        playerId: prediction.player_id,
+        matchId: prediction.match_id,
+        homeScore: prediction.home_score,
+        awayScore: prediction.away_score,
+        updatedAt: prediction.updated_at,
+      },
+    ]),
+  );
 
-  state.results = Object.fromEntries(results.map((result) => [
-    result.match_id,
-    {
-      matchId: result.match_id,
-      homeScore: result.home_score,
-      awayScore: result.away_score,
-      updatedAt: result.updated_at,
-    },
-  ]));
+  state.results = Object.fromEntries(
+    results.map((result) => [
+      result.match_id,
+      {
+        matchId: result.match_id,
+        homeScore: result.home_score,
+        awayScore: result.away_score,
+        updatedAt: result.updated_at,
+      },
+    ]),
+  );
 
-  const scoringSetting = settings.find((setting) => setting.key === "scoring_config");
+  const scoringSetting = settings.find(
+    (setting) => setting.key === "scoring_config",
+  );
   if (scoringSetting?.value) {
-    state.config = normalizeState({ config: scoringSetting.value }).config;
+    state.config = normalizeState({
+      config: scoringSetting.value,
+      leagues: state.leagues,
+    }).config;
   }
 
   if (activePlayerId && !state.players[activePlayerId]) {
@@ -1300,6 +1375,17 @@ async function seedSupabaseDefaults() {
 
   if (!setting) {
     await saveSettings();
+  }
+
+  const { data: leaguesSetting, error: leaguesError } = await supabaseClient
+    .from("app_settings")
+    .select("key")
+    .eq("key", "leagues")
+    .maybeSingle();
+  if (leaguesError) throw leaguesError;
+
+  if (!leaguesSetting) {
+    await saveLeagues();
   }
 }
 
@@ -1339,8 +1425,15 @@ async function deleteStaleSupabaseMatches() {
 }
 
 async function supabaseSelect(table) {
+  if (!supabaseClient) return [];
+
   const { data, error } = await supabaseClient.from(table).select("*");
-  if (error) throw error;
+
+  if (error) {
+    console.error(`Error loading ${table}:`, error);
+    return [];
+  }
+
   return data || [];
 }
 
@@ -1360,7 +1453,10 @@ async function savePlayer(player) {
     league_ids: player.leagueIds,
   });
   if (error) {
-    if (error.code === "23505") throw new Error("That username is already taken. Choose a different name.");
+    if (error.code === "23505")
+      throw new Error(
+        "That username is already taken. Choose a different name.",
+      );
     throw error;
   }
 }
@@ -1370,6 +1466,14 @@ async function saveSettings() {
   await supabaseUpsert("app_settings", {
     key: "scoring_config",
     value: state.config,
+  });
+}
+
+async function saveLeagues() {
+  if (!supabaseClient) return;
+  await supabaseUpsert("app_settings", {
+    key: "leagues",
+    value: state.leagues,
   });
 }
 
@@ -1406,24 +1510,50 @@ async function saveResult(result) {
 
 async function deleteResult(matchId) {
   if (!supabaseClient) return;
-  const { error } = await supabaseClient.from("results").delete().eq("match_id", matchId);
+  const { error } = await supabaseClient
+    .from("results")
+    .delete()
+    .eq("match_id", matchId);
   if (error) throw error;
 }
 
 async function deletePlayerFromSupabase(playerId) {
   if (!supabaseClient) return;
-  const { error } = await supabaseClient.from("players").delete().eq("id", playerId);
+  const { error } = await supabaseClient
+    .from("players")
+    .delete()
+    .eq("id", playerId);
   if (error) throw error;
 }
 
 function setupRealtimeSync() {
   supabaseClient
     .channel("fantasy-world-cup-sync")
-    .on("postgres_changes", { event: "*", schema: "public", table: "players" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "predictions" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "results" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, refreshFromSupabase)
-    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, refreshFromSupabase)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "players" },
+      refreshFromSupabase,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "predictions" },
+      refreshFromSupabase,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "results" },
+      refreshFromSupabase,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "app_settings" },
+      refreshFromSupabase,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "matches" },
+      refreshFromSupabase,
+    )
     .subscribe();
 }
 
@@ -1438,12 +1568,10 @@ function refreshFromSupabase() {
 
 function mergeMatchesWithDefaults(rows) {
   const remoteMatches = new Map(rows.map((row) => [row.id, matchFromRow(row)]));
-  return MATCHES
-    .map((match) => ({
-      ...(remoteMatches.get(match.id) || {}),
-      ...match,
-    }))
-    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  return MATCHES.map((match) => ({
+    ...(remoteMatches.get(match.id) || {}),
+    ...match,
+  })).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 }
 
 function matchToRow(match) {
@@ -1472,8 +1600,46 @@ function createPlayerId(name) {
   return name.trim();
 }
 
+function createLeagueId(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function createLeague(name) {
+  const leagueName = name.trim();
+  const leagueId = createLeagueId(leagueName);
+  if (!leagueId) throw new Error("Use at least one letter or number.");
+  if (state.leagues[leagueId]) {
+    throw new Error("That league already exists.");
+  }
+
+  state.leagues = {
+    ...state.leagues,
+    [leagueId]: leagueName,
+  };
+  await saveLeagues();
+  saveState();
+}
+
+async function updateLeagueName(leagueId, name) {
+  const leagueName = name.trim();
+  if (!normalizeLeagueId(leagueId)) return;
+  if (!leagueName) throw new Error("League name cannot be blank.");
+
+  state.leagues = {
+    ...state.leagues,
+    [leagueId]: leagueName,
+  };
+  await saveLeagues();
+  saveState();
+}
+
 function openPlayerModal() {
   els.createdPlayer.textContent = "";
+  renderPlayerLeagueOptions();
   renderModalPlayerOptions();
   els.playerModal.hidden = false;
   els.playerUsername.focus();
@@ -1492,21 +1658,49 @@ function setActivePlayer(playerId) {
   render();
 }
 
-function normalizeLeagueId(leagueId) {
-  return LEAGUES[leagueId] ? leagueId : "";
+function normalizeLeagues(value) {
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? value
+      : DEFAULT_LEAGUES;
+  const leagues = Object.fromEntries(
+    Object.entries(source)
+      .map(([id, name]) => [createLeagueId(id), String(name || "").trim()])
+      .filter(([id, name]) => id && name),
+  );
+
+  return {
+    ...DEFAULT_LEAGUES,
+    ...leagues,
+  };
 }
 
-function normalizeLeagueIds(value) {
+function normalizeLeagueId(
+  leagueId,
+  leagues = state?.leagues || DEFAULT_LEAGUES,
+) {
+  return leagues[leagueId] ? leagueId : "";
+}
+
+function normalizeLeagueIds(value, leagues = state?.leagues || DEFAULT_LEAGUES) {
   const values = Array.isArray(value) ? value : [value];
-  return [...new Set(values.map(normalizeLeagueId).filter(Boolean))];
+  return [
+    ...new Set(
+      values.map((id) => normalizeLeagueId(id, leagues)).filter(Boolean),
+    ),
+  ];
 }
 
 function getPlayerLeagueIds(playerId) {
-  return normalizeLeagueIds(state.players[playerId]?.leagueIds || state.players[playerId]?.leagueId || "");
+  return normalizeLeagueIds(
+    state.players[playerId]?.leagueIds ||
+      state.players[playerId]?.leagueId ||
+      "",
+  );
 }
 
 function leagueName(leagueId) {
-  return LEAGUES[leagueId] || "";
+  return state.leagues[leagueId] || "";
 }
 
 function leagueNames(leagueIds) {
@@ -1537,7 +1731,9 @@ async function leavePlayerLeague(playerId, leagueId) {
   const player = state.players[playerId];
   if (!player) return;
 
-  const leagueIds = normalizeLeagueIds(player.leagueIds).filter((id) => id !== leagueId);
+  const leagueIds = normalizeLeagueIds(player.leagueIds).filter(
+    (id) => id !== leagueId,
+  );
   player.leagueIds = leagueIds;
   player.leagueId = leagueIds[0] || "";
   await savePlayerLeagues(player);
@@ -1556,7 +1752,9 @@ async function savePlayerLeagues(player) {
 }
 
 function renderModalPlayerOptions() {
-  const players = Object.values(state.players).sort((a, b) => a.name.localeCompare(b.name));
+  const players = Object.values(state.players).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   if (players.length === 0) {
     els.modalPlayerSelect.innerHTML = `<option>No players yet</option>`;
     els.modalPlayerSelect.disabled = true;
@@ -1565,19 +1763,44 @@ function renderModalPlayerOptions() {
   }
 
   els.modalPlayerSelect.innerHTML = players
-    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`)
+    .map(
+      (player) =>
+        `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`,
+    )
     .join("");
-  els.modalPlayerSelect.value = activePlayerId && state.players[activePlayerId] ? activePlayerId : players[0]?.id || "";
+  els.modalPlayerSelect.value =
+    activePlayerId && state.players[activePlayerId]
+      ? activePlayerId
+      : players[0]?.id || "";
   els.modalPlayerSelect.disabled = false;
   els.modalLoginPlayer.disabled = false;
 }
 
+function renderPlayerLeagueOptions() {
+  const previousValue = els.playerLeague.value;
+  const hasOptions = els.playerLeague.options.length > 0;
+  const selectedLeague = hasOptions
+    ? normalizeLeagueId(previousValue)
+    : DEFAULT_LEAGUE_ID;
+  els.playerLeague.innerHTML = [
+    `<option value="">No league - worldwide only</option>`,
+    ...Object.entries(state.leagues).map(
+      ([leagueId, name]) =>
+        `<option value="${escapeHtml(leagueId)}">${escapeHtml(name)}</option>`,
+    ),
+  ].join("");
+  els.playerLeague.value = selectedLeague || "";
+}
+
 function findExistingPlayerId(playerId) {
   const normalized = playerId.trim().toLowerCase();
-  return Object.keys(state.players).find((id) => id.toLowerCase() === normalized);
+  return Object.keys(state.players).find(
+    (id) => id.toLowerCase() === normalized,
+  );
 }
 
 function render() {
+  renderPlayerLeagueOptions();
   renderSummary();
   renderMatches();
   renderLeaderboard();
@@ -1587,7 +1810,9 @@ function render() {
   renderAdminAccess();
   renderResultsAdmin();
   renderConfig();
+  renderLeaguesAdmin();
   renderUsersAdmin();
+  renderStats();
 }
 
 function showView(viewId) {
@@ -1618,8 +1843,9 @@ function renderSummary() {
 
 function renderMatches() {
   els.matches.innerHTML = "";
-  const fixtures = matchesData
-    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  const fixtures = matchesData.sort(
+    (a, b) => new Date(a.kickoff) - new Date(b.kickoff),
+  );
 
   const groupedMatches = groupMatchesByDate(fixtures);
   const closestDateKey = getClosestUpcomingDateKey(groupedMatches);
@@ -1636,67 +1862,78 @@ function renderMatches() {
   selectedMatchDateKey = clampDateKey(selectedMatchDateKey);
 
   renderMatchDateNavigator(groupedMatches);
-  renderSelectedMatchDay(selectedMatchDateKey, groupedMatches[selectedMatchDateKey] || []);
+  renderSelectedMatchDay(
+    selectedMatchDateKey,
+    groupedMatches[selectedMatchDateKey] || [],
+  );
 }
 
 function renderMatchRow(match) {
-    const card = els.matchTemplate.content.firstElementChild.cloneNode(true);
-    const kickoff = new Date(match.kickoff);
-    const prediction = getPrediction(activePlayerId, match.id);
-    const locked = isLocked(match);
+  const card = els.matchTemplate.content.firstElementChild.cloneNode(true);
+  const kickoff = new Date(match.kickoff);
+  const prediction = getPrediction(activePlayerId, match.id);
+  const locked = isLocked(match);
 
-    card.classList.toggle("locked", locked);
-    card.querySelector(".match-time").textContent = formatTime(kickoff);
-    card.querySelector(".match-time").dateTime = match.kickoff;
-    card.querySelector(".match-group").textContent = match.group;
-    card.querySelector(".venue").textContent = match.venue;
-    card.querySelector(".home-label").innerHTML = teamHtml(match.home);
-    card.querySelector(".away-label").innerHTML = teamHtml(match.away);
+  card.classList.toggle("locked", locked);
+  card.querySelector(".match-time").textContent = formatTime(kickoff);
+  card.querySelector(".match-time").dateTime = match.kickoff;
+  card.querySelector(".match-group").textContent = match.group;
+  card.querySelector(".venue").textContent = match.venue;
+  card.querySelector(".home-label").innerHTML = teamHtml(match.home);
+  card.querySelector(".away-label").innerHTML = teamHtml(match.away);
 
-    const form = card.querySelector("form");
-    form.dataset.matchId = match.id;
-    form.homeScore.value = prediction ? prediction.homeScore : "";
-    form.awayScore.value = prediction ? prediction.awayScore : "";
-    form.homeScore.disabled = locked || !activePlayerId;
-    form.awayScore.disabled = locked || !activePlayerId;
-    form.addEventListener("submit", (event) => event.preventDefault());
-    form.addEventListener("input", handlePredictionInput);
+  const form = card.querySelector("form");
+  form.dataset.matchId = match.id;
+  form.homeScore.value = prediction ? prediction.homeScore : "";
+  form.awayScore.value = prediction ? prediction.awayScore : "";
+  form.homeScore.disabled = locked || !activePlayerId;
+  form.awayScore.disabled = locked || !activePlayerId;
+  form.addEventListener("submit", (event) => event.preventDefault());
+  form.addEventListener("input", handlePredictionInput);
 
-    const lockMessage = card.querySelector(".lock-message");
-    if (!activePlayerId) {
-      lockMessage.textContent = "Create or select a player to predict this match.";
-    } else if (locked) {
-      lockMessage.textContent = "Predictions are locked for this match.";
-    } else if (prediction) {
-      lockMessage.textContent = `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`;
-    } else {
-      lockMessage.textContent = `Locks ${state.config.lockMinutesBeforeKickoff} minutes before kick-off.`;
-    }
+  const lockMessage = card.querySelector(".lock-message");
+  if (!activePlayerId) {
+    lockMessage.textContent =
+      "Create or select a player to predict this match.";
+  } else if (locked) {
+    lockMessage.textContent = "Predictions are locked for this match.";
+  } else if (prediction) {
+    lockMessage.textContent = `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`;
+  } else {
+    lockMessage.textContent = `Locks ${state.config.lockMinutesBeforeKickoff} minutes before kick-off.`;
+  }
 
-    return card;
+  return card;
 }
 
 function renderNextMatchesSummary(groupedMatches) {
-  const closestDateKey = getClosestUpcomingDateKey(groupedMatches) || Object.keys(groupedMatches)[0];
+  const closestDateKey =
+    getClosestUpcomingDateKey(groupedMatches) || Object.keys(groupedMatches)[0];
   const matches = groupedMatches[closestDateKey];
-  const heading = isTodayKey(closestDateKey) ? "Today's matches" : "Next matches";
+  const heading = isTodayKey(closestDateKey)
+    ? "Today's matches"
+    : "Next matches";
   const nextMatch = getNextUpcomingMatch();
   countdownMatchId = nextMatch?.id || "";
 
   els.nextMatches.innerHTML = `
-    ${nextMatch ? `
+    ${
+      nextMatch
+        ? `
       <section class="match-countdown">
         <p class="eyebrow">Next match starts in</p>
         <time class="countdown-clock" dateTime="${escapeHtml(nextMatch.kickoff)}" data-countdown-target="${escapeHtml(nextMatch.kickoff)}">
           ${countdownHtml(nextMatch.kickoff)}
         </time>
       </section>
-    ` : `
+    `
+        : `
       <section class="match-countdown is-complete">
         <p class="eyebrow">Tournament status</p>
         <strong>All scheduled matches have kicked off.</strong>
       </section>
-    `}
+    `
+    }
     <div class="next-matches-head">
       <div>
         <p class="eyebrow">${heading}</p>
@@ -1705,7 +1942,9 @@ function renderNextMatchesSummary(groupedMatches) {
       <button class="secondary" type="button" id="jump-next-day">View day</button>
     </div>
     <div class="next-match-list">
-      ${matches.map((match) => `
+      ${matches
+        .map(
+          (match) => `
         <button class="next-match-chip" type="button" data-date-key="${closestDateKey}">
           <span>${formatTime(new Date(match.kickoff))}</span>
           <span class="next-match-details">
@@ -1713,14 +1952,18 @@ function renderNextMatchesSummary(groupedMatches) {
             <small>${escapeHtml(match.venue)}</small>
           </span>
         </button>
-      `).join("")}
+      `,
+        )
+        .join("")}
     </div>
   `;
 
-  els.nextMatches.querySelector("#jump-next-day").addEventListener("click", () => {
-    selectedMatchDateKey = closestDateKey;
-    renderMatches();
-  });
+  els.nextMatches
+    .querySelector("#jump-next-day")
+    .addEventListener("click", () => {
+      selectedMatchDateKey = closestDateKey;
+      renderMatches();
+    });
   els.nextMatches.querySelectorAll(".next-match-chip").forEach((button) => {
     button.addEventListener("click", () => {
       selectedMatchDateKey = button.dataset.dateKey;
@@ -1747,7 +1990,9 @@ function renderMatchDateNavigator(groupedMatches) {
 
   els.matchDayTabs.querySelectorAll(".day-step").forEach((button) => {
     button.addEventListener("click", () => {
-      selectedMatchDateKey = shiftDateKey(selectedMatchDateKey, Number(button.dataset.direction)) || selectedMatchDateKey;
+      selectedMatchDateKey =
+        shiftDateKey(selectedMatchDateKey, Number(button.dataset.direction)) ||
+        selectedMatchDateKey;
       renderMatches();
     });
   });
@@ -1779,6 +2024,132 @@ function renderSelectedMatchDay(dateKey, matches) {
   els.matches.append(dayPanel);
 }
 
+function renderStats() {
+  if (!els.statsSummary || !els.matchPredictions) return;
+
+  if (!modelPredictions.length) {
+    els.statsSummary.innerHTML = `
+      <section class="stats-hero">
+        <div>
+          <p class="eyebrow">Predictor hub</p>
+          <h3>No model predictions yet</h3>
+          <p class="muted">Once match predictions are loaded, this page will show score picks, win chances, and the strongest calls.</p>
+        </div>
+      </section>
+    `;
+    els.matchPredictions.innerHTML = "";
+    return;
+  }
+
+  const predictionSummaries = modelPredictions.map(modelPredictionSummary);
+  const strongestFavourite = [...predictionSummaries].sort(
+    (a, b) => b.topProbability - a.topProbability,
+  )[0];
+  const drawLeans = predictionSummaries.filter(
+    (prediction) => prediction.topOutcome === "Draw",
+  ).length;
+
+  els.statsSummary.innerHTML = `
+    <section class="stats-hero">
+      <div>
+        <p class="eyebrow">Predictor hub</p>
+        <h3>Stats & Predictions</h3>
+        <p class="muted">Model score calls, match win chances, and the fixtures where the numbers have a clear favourite.</p>
+      </div>
+      <div class="stats-spotlight">
+        <span>Strongest call</span>
+        <strong>${strongestFavourite.topOutcome === "Draw" ? "Draw" : teamHtml(strongestFavourite.teamName)}</strong>
+        <p>${strongestFavourite.topProbability}% ${escapeHtml(strongestFavourite.topOutcome)}</p>
+      </div>
+    </section>
+    <div class="stats-grid">
+      <article class="stat-card">
+        <span>Fixtures predicted</span>
+        <strong>${modelPredictions.length}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Draw leans</span>
+        <strong>${drawLeans}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Top confidence</span>
+        <strong>${strongestFavourite.topProbability}%</strong>
+      </article>
+    </div>
+  `;
+
+  els.matchPredictions.innerHTML = modelPredictions
+    .map(modelPredictionCardHtml)
+    .join("");
+}
+
+function modelPredictionSummary(prediction) {
+  const outcomes = [
+    {
+      label: prediction.home_team,
+      probability: Number(prediction.home_win_prob) || 0,
+      teamName: prediction.home_team,
+    },
+    {
+      label: "Draw",
+      probability: Number(prediction.draw_prob) || 0,
+      teamName: prediction.home_team,
+    },
+    {
+      label: prediction.away_team,
+      probability: Number(prediction.away_win_prob) || 0,
+      teamName: prediction.away_team,
+    },
+  ];
+  const top = outcomes.sort((a, b) => b.probability - a.probability)[0];
+
+  return {
+    ...prediction,
+    teamName: top.teamName,
+    topOutcome: top.label,
+    topProbability: top.probability,
+  };
+}
+
+function modelPredictionCardHtml(prediction) {
+  const summary = modelPredictionSummary(prediction);
+  return `
+    <article class="model-prediction-card">
+      <div class="model-fixture">
+        <div class="model-team-row">
+          ${teamHtml(prediction.home_team)}
+          <span class="model-score">${escapeHtml(prediction.predicted_score)}</span>
+          ${teamHtml(prediction.away_team)}
+        </div>
+        <p class="muted">Predicted score</p>
+      </div>
+      <div class="model-pick">
+        <span>Likely result</span>
+        <strong>${escapeHtml(summary.topOutcome)}</strong>
+        <p>${summary.topProbability}% confidence</p>
+      </div>
+      <div class="prediction-probs">
+        ${probabilityRowHtml(prediction.home_team, prediction.home_win_prob, true)}
+        ${probabilityRowHtml("Draw", prediction.draw_prob)}
+        ${probabilityRowHtml(prediction.away_team, prediction.away_win_prob, true)}
+      </div>
+    </article>
+  `;
+}
+
+function probabilityRowHtml(label, probability, showFlag = false) {
+  const value = Math.max(0, Math.min(100, Number(probability) || 0));
+  return `
+    <div class="probability-row">
+      <span>${showFlag ? teamHtml(label) : escapeHtml(label)}</span>
+      <div class="probability-meter" aria-hidden="true">
+        <span style="width: ${value}%"></span>
+      </div>
+      <strong>${value}%</strong>
+    </div>
+  `;
+}
+
 function groupMatchesByDate(matches) {
   return matches.reduce((groups, match) => {
     const date = new Date(match.kickoff);
@@ -1802,7 +2173,9 @@ function getClosestUpcomingDateKey(groupedMatches) {
     .flat()
     .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
     .find((match) => new Date(match.kickoff).getTime() >= now);
-  return futureMatch ? getDateKey(new Date(futureMatch.kickoff)) : Object.keys(groupedMatches)[0];
+  return futureMatch
+    ? getDateKey(new Date(futureMatch.kickoff))
+    : Object.keys(groupedMatches)[0];
 }
 
 function getNextUpcomingMatch() {
@@ -1844,12 +2217,16 @@ function countdownHtml(kickoff) {
     ["hours", parts.hours],
     ["minutes", parts.minutes],
     ["seconds", parts.seconds],
-  ].map(([unit, value]) => `
+  ]
+    .map(
+      ([unit, value]) => `
     <span class="countdown-unit">
       <span class="countdown-value" data-unit="${unit}">${value}</span>
       <span class="countdown-label">${unit}</span>
     </span>
-  `).join("");
+  `,
+    )
+    .join("");
 }
 
 function getCountdownParts(kickoff) {
@@ -1920,7 +2297,10 @@ async function handlePredictionInput(event) {
   state.predictions[predictionKey(activePlayerId, matchId)] = prediction;
   await savePrediction(prediction);
   saveState();
-  updateAutosaveMessage(form, `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`);
+  updateAutosaveMessage(
+    form,
+    `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`,
+  );
   renderPlayerPredictions();
 }
 
@@ -1932,7 +2312,10 @@ function updateAutosaveMessage(form, message) {
 
 function renderLeaderboard() {
   const activeLeagueIds = getPlayerLeagueIds(activePlayerId);
-  if (leaderboardScope !== WORLDWIDE_SCOPE && !activeLeagueIds.includes(leaderboardScope)) {
+  if (
+    leaderboardScope !== WORLDWIDE_SCOPE &&
+    !activeLeagueIds.includes(leaderboardScope)
+  ) {
     leaderboardScope = activeLeagueIds[0] || WORLDWIDE_SCOPE;
   }
 
@@ -1941,29 +2324,44 @@ function renderLeaderboard() {
     [WORLDWIDE_SCOPE, "Worldwide"],
   ];
 
-  els.leaderboardScopeTabs.innerHTML = scopes.map(([scope, label]) => `
+  els.leaderboardScopeTabs.innerHTML = scopes
+    .map(
+      ([scope, label]) => `
     <button class="leaderboard-scope-tab ${leaderboardScope === scope ? "active" : ""}" type="button" data-leaderboard-scope="${escapeHtml(scope)}">
       ${escapeHtml(label)}
     </button>
-  `).join("");
+  `,
+    )
+    .join("");
 
   renderJoinLeagueControls(activeLeagueIds);
-  els.leaveLeagueButton.hidden = !activePlayerId
-    || leaderboardScope === WORLDWIDE_SCOPE
-    || !activeLeagueIds.includes(leaderboardScope);
+  els.leaveLeagueButton.hidden =
+    !activePlayerId ||
+    leaderboardScope === WORLDWIDE_SCOPE ||
+    !activeLeagueIds.includes(leaderboardScope);
 
   const rows = Object.values(state.players)
-    .filter((player) => leaderboardScope === WORLDWIDE_SCOPE || getPlayerLeagueIds(player.id).includes(leaderboardScope))
+    .filter(
+      (player) =>
+        leaderboardScope === WORLDWIDE_SCOPE ||
+        getPlayerLeagueIds(player.id).includes(leaderboardScope),
+    )
     .map((player) => ({ player, stats: calculatePlayerStats(player.id) }))
-    .sort((a, b) => b.stats.points - a.stats.points || b.stats.correctPredictions - a.stats.correctPredictions);
+    .sort(
+      (a, b) =>
+        b.stats.points - a.stats.points ||
+        b.stats.correctPredictions - a.stats.correctPredictions,
+    );
 
   els.leaderboardCount.textContent = `${rows.length} players`;
-  els.leaderboardScopeSummary.textContent = leaderboardScope !== WORLDWIDE_SCOPE
-    ? `Showing ${leagueName(leaderboardScope)} rankings.`
-    : "Showing every player across all leagues and players without a league.";
-  els.leaderboardBody.innerHTML = rows
-    .map(
-      (row, index) => `
+  els.leaderboardScopeSummary.textContent =
+    leaderboardScope !== WORLDWIDE_SCOPE
+      ? `Showing ${leagueName(leaderboardScope)} rankings.`
+      : "Showing every player across all leagues and players without a league.";
+  els.leaderboardBody.innerHTML =
+    rows
+      .map(
+        (row, index) => `
         <tr class="leaderboard-row">
           <td><span class="rank-badge">${index + 1}</span></td>
           <td>
@@ -1976,8 +2374,9 @@ function renderLeaderboard() {
           <td>${leaderboardFormHtml(row.player.id)}</td>
         </tr>
       `,
-    )
-    .join("") || `<tr><td colspan="5" class="muted">${leaderboardScope !== WORLDWIDE_SCOPE ? "No players in this league yet." : "No players yet."}</td></tr>`;
+      )
+      .join("") ||
+    `<tr><td colspan="5" class="muted">${leaderboardScope !== WORLDWIDE_SCOPE ? "No players in this league yet." : "No players yet."}</td></tr>`;
 }
 
 function leaderboardLeagueHtml(leagueIds) {
@@ -1994,12 +2393,17 @@ function leaderboardLeagueHtml(leagueIds) {
 }
 
 function renderJoinLeagueControls(activeLeagueIds) {
-  const availableLeagues = Object.entries(LEAGUES).filter(([leagueId]) => !activeLeagueIds.includes(leagueId));
+  const availableLeagues = Object.entries(state.leagues).filter(
+    ([leagueId]) => !activeLeagueIds.includes(leagueId),
+  );
   els.joinLeaguePanel.hidden = !activePlayerId || availableLeagues.length === 0;
   if (els.joinLeaguePanel.hidden) return;
 
   els.joinLeagueSelect.innerHTML = availableLeagues
-    .map(([leagueId, name]) => `<option value="${escapeHtml(leagueId)}">${escapeHtml(name)}</option>`)
+    .map(
+      ([leagueId, name]) =>
+        `<option value="${escapeHtml(leagueId)}">${escapeHtml(name)}</option>`,
+    )
     .join("");
 }
 
@@ -2008,16 +2412,17 @@ function renderTeams() {
     tab.classList.toggle("active", tab.dataset.teamView === selectedTeamView);
   });
 
-  els.teamsContent.innerHTML = selectedTeamView === "groups"
-    ? groupStageTeamsHtml()
-    : knockoutTeamsHtml();
+  els.teamsContent.innerHTML =
+    selectedTeamView === "groups" ? groupStageTeamsHtml() : knockoutTeamsHtml();
 }
 
 function groupStageTeamsHtml() {
   const groups = getGroupStageTeams();
   return `
     <div class="team-group-grid">
-      ${groups.map(([group, teams]) => `
+      ${groups
+        .map(
+          ([group, teams]) => `
         <section class="team-group-card">
           <div class="team-group-head">
             <h3>${escapeHtml(group)}</h3>
@@ -2027,7 +2432,9 @@ function groupStageTeamsHtml() {
             ${teams.map((team) => teamCardHtml(team)).join("")}
           </div>
         </section>
-      `).join("")}
+      `,
+        )
+        .join("")}
     </div>
   `;
 }
@@ -2044,18 +2451,23 @@ function knockoutTeamsHtml() {
 
 function getGroupStageTeams() {
   const groups = new Map();
-  MATCHES
-    .filter((match) => /^Group [A-L]$/.test(match.group))
-    .forEach((match) => {
+  MATCHES.filter((match) => /^Group [A-L]$/.test(match.group)).forEach(
+    (match) => {
       [match.home, match.away].forEach((team) => {
         if (!groups.has(match.group)) groups.set(match.group, new Set());
         groups.get(match.group).add(team);
       });
-    });
+    },
+  );
 
   return [...groups.entries()]
-    .sort(([groupA], [groupB]) => groupA.localeCompare(groupB, undefined, { numeric: true }))
-    .map(([group, teams]) => [group, [...teams].sort((a, b) => a.localeCompare(b))]);
+    .sort(([groupA], [groupB]) =>
+      groupA.localeCompare(groupB, undefined, { numeric: true }),
+    )
+    .map(([group, teams]) => [
+      group,
+      [...teams].sort((a, b) => a.localeCompare(b)),
+    ]);
 }
 
 function teamCardHtml(team) {
@@ -2069,19 +2481,33 @@ function teamCardHtml(team) {
 
 function renderPointsBreakdown() {
   const rules = [
-    ["Perfect score", state.config.points.exactScore, "Exact scoreline. This replaces all other bonuses."],
-    ["Correct result", state.config.points.correctOutcome, "Right winner, or correctly predicted a draw."],
-    ["Team goals", state.config.points.correctTeamGoalsBonus, "One team's goals exactly right."],
+    [
+      "Perfect score",
+      state.config.points.exactScore,
+      "Exact scoreline. This replaces all other bonuses.",
+    ],
+    [
+      "Correct result",
+      state.config.points.correctOutcome,
+      "Right winner, or correctly predicted a draw.",
+    ],
+    [
+      "Team goals",
+      state.config.points.correctTeamGoalsBonus,
+      "One team's goals exactly right.",
+    ],
   ];
 
   els.pointsBreakdownList.innerHTML = rules
-    .map(([label, points, description]) => `
+    .map(
+      ([label, points, description]) => `
       <article class="points-rule">
         <strong>${escapeHtml(label)}</strong>
         <span class="points-rule-value">${points} pt${points === 1 ? "" : "s"}</span>
         <p>${escapeHtml(description)}</p>
       </article>
-    `)
+    `,
+    )
     .join("");
 }
 
@@ -2092,7 +2518,7 @@ function leaderboardFormHtml(playerId) {
 
   return `
     <div class="form-strip" aria-label="Recent form">
-      ${items.map((item) => item ? formDotHtml(item) : `<span class="form-dot form-empty" aria-label="No result yet"></span>`).join("")}
+      ${items.map((item) => (item ? formDotHtml(item) : `<span class="form-dot form-empty" aria-label="No result yet"></span>`)).join("")}
     </div>
   `;
 }
@@ -2136,19 +2562,22 @@ function renderPlayerPredictions() {
     return;
   }
 
-  const predictions = matchesData.map((match) => {
-    const prediction = getPrediction(viewedPredictionPlayerId, match.id);
-    const result = state.results[match.id];
-    const score = prediction && result ? scorePrediction(prediction, result) : null;
-    return { match, prediction, result, score };
-  }).filter((item) => item.prediction);
+  const predictions = matchesData
+    .map((match) => {
+      const prediction = getPrediction(viewedPredictionPlayerId, match.id);
+      const result = state.results[match.id];
+      const score =
+        prediction && result ? scorePrediction(prediction, result) : null;
+      return { match, prediction, result, score };
+    })
+    .filter((item) => item.prediction);
 
   const stats = calculatePlayerStats(player.id);
   els.predictionTotal.textContent = stats.points;
 
-  els.playerPredictions.innerHTML = predictions
-    .map(
-      ({ match, prediction, result, score }) => {
+  els.playerPredictions.innerHTML =
+    predictions
+      .map(({ match, prediction, result, score }) => {
         const status = getPredictionStatus(score);
         const details = result
           ? predictionBreakdownHtml(match, result, score)
@@ -2174,20 +2603,29 @@ function renderPlayerPredictions() {
           </button>
         </article>
       `;
-      },
-    )
-    .join("") || `<p class="muted">This player has not made any predictions yet.</p>`;
+      })
+      .join("") ||
+    `<p class="muted">This player has not made any predictions yet.</p>`;
 }
 
 function syncViewedPredictionPlayer() {
-  if (viewedPredictionPlayerId && state.players[viewedPredictionPlayerId]) return;
-  viewedPredictionPlayerId = activePlayerId && state.players[activePlayerId] ? activePlayerId : Object.keys(state.players)[0] || "";
+  if (viewedPredictionPlayerId && state.players[viewedPredictionPlayerId])
+    return;
+  viewedPredictionPlayerId =
+    activePlayerId && state.players[activePlayerId]
+      ? activePlayerId
+      : Object.keys(state.players)[0] || "";
 }
 
 function renderPredictionPlayerOptions() {
-  const players = Object.values(state.players).sort((a, b) => a.name.localeCompare(b.name));
+  const players = Object.values(state.players).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   els.predictionPlayerSelect.innerHTML = players
-    .map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`)
+    .map(
+      (player) =>
+        `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`,
+    )
     .join("");
   els.predictionPlayerSelect.value = viewedPredictionPlayerId;
   els.predictionPlayerSelect.disabled = players.length === 0;
@@ -2227,7 +2665,12 @@ function getPredictionStatus(score) {
 
 function predictionBreakdownHtml(match, result, score) {
   const rows = score.breakdown.length
-    ? score.breakdown.map((item) => `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`).join("")
+    ? score.breakdown
+        .map(
+          (item) =>
+            `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`,
+        )
+        .join("")
     : `<span>No points <strong>0</strong></span>`;
 
   return `
@@ -2239,7 +2682,12 @@ function predictionBreakdownHtml(match, result, score) {
 
 function leaderboardBreakdownHtml(match, result, score) {
   const rows = score.breakdown.length
-    ? score.breakdown.map((item) => `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`).join("")
+    ? score.breakdown
+        .map(
+          (item) =>
+            `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`,
+        )
+        .join("")
     : `<span>No points <strong>0</strong></span>`;
 
   return `
@@ -2256,26 +2704,28 @@ function pointsLabel(points) {
 function renderResultsAdmin() {
   if (!adminUnlocked) return;
 
-  els.resultsAdmin.innerHTML = matchesData.map((match) => {
-    const result = state.results[match.id] || {};
-    return `
+  els.resultsAdmin.innerHTML = matchesData
+    .map((match) => {
+      const result = state.results[match.id] || {};
+      return `
       <form class="admin-row" data-match-id="${match.id}">
-        <div>
-          <strong class="admin-match-title">${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
-          <p class="muted">${formatDate(new Date(match.kickoff))}</p>
+        <div class="admin-match-meta">
+          <strong>${escapeHtml(match.id)}</strong>
+          <p class="muted">${escapeHtml(match.group)} - ${formatDate(new Date(match.kickoff))}</p>
         </div>
         <label class="admin-score-label">
-          ${teamHtml(match.home)}
+          ${teamHtml(match.home, { className: "admin-team-name", title: true })}
           <input type="number" min="0" max="30" name="homeScore" value="${result.homeScore ?? ""}" />
         </label>
         <label class="admin-score-label">
-          ${teamHtml(match.away)}
+          ${teamHtml(match.away, { className: "admin-team-name", title: true })}
           <input type="number" min="0" max="30" name="awayScore" value="${result.awayScore ?? ""}" />
         </label>
         <p class="admin-save-status muted" aria-live="polite">${result.matchId ? "Saved" : "Enter score"}</p>
       </form>
     `;
-  }).join("");
+    })
+    .join("");
 
   els.resultsAdmin.querySelectorAll("form").forEach((form) => {
     form.addEventListener("submit", (event) => event.preventDefault());
@@ -2358,15 +2808,88 @@ function renderConfig() {
     .join("");
 }
 
+function renderLeaguesAdmin() {
+  if (!adminUnlocked) return;
+
+  els.leaguesAdmin.innerHTML = Object.entries(state.leagues)
+    .map(
+      ([leagueId, name]) => `
+        <form class="admin-league-row" data-league-id="${escapeHtml(leagueId)}">
+          <label>
+            League name
+            <input name="leagueName" value="${escapeHtml(name)}" required />
+          </label>
+          <p class="muted">${escapeHtml(leagueId)}</p>
+          <span class="pill">${countPlayersInLeague(leagueId)} players</span>
+          <p class="admin-save-status muted" aria-live="polite">Saved</p>
+        </form>
+      `,
+    )
+    .join("");
+
+  els.leaguesAdmin.querySelectorAll(".admin-league-row").forEach((form) => {
+    form.addEventListener("submit", (event) => event.preventDefault());
+    form.addEventListener("input", handleLeagueNameInput);
+  });
+}
+
+function handleLeagueNameInput(event) {
+  const form = event.currentTarget;
+  const status = form.querySelector(".admin-save-status");
+  clearTimeout(form.saveTimer);
+  status.textContent = "Saving...";
+  form.saveTimer = setTimeout(() => {
+    saveLeagueNameForm(form).catch((error) => {
+      console.error(error);
+      status.textContent = error.message || "Save failed";
+    });
+  }, 450);
+}
+
+async function saveLeagueNameForm(form) {
+  const leagueId = form.dataset.leagueId;
+  const input = form.elements.leagueName;
+  const status = form.querySelector(".admin-save-status");
+  const newName = input.value.trim();
+
+  if (!newName) {
+    status.textContent = "Name required";
+    return;
+  }
+
+  if (newName === leagueName(leagueId)) {
+    status.textContent = "Saved";
+    return;
+  }
+
+  await updateLeagueName(leagueId, newName);
+  status.textContent = "Saved";
+  renderPlayerLeagueOptions();
+  renderLeaderboard();
+  renderSummary();
+  renderPlayerPredictions();
+}
+
+function countPlayersInLeague(leagueId) {
+  return Object.values(state.players).filter((player) =>
+    getPlayerLeagueIds(player.id).includes(leagueId),
+  ).length;
+}
+
 function renderUsersAdmin() {
   if (!adminUnlocked) return;
 
-  const players = Object.values(state.players).sort((a, b) => a.name.localeCompare(b.name));
-  els.usersAdmin.innerHTML = players
-    .map((player) => {
-      const stats = calculatePlayerStats(player.id);
-      const predictionCount = Object.values(state.predictions).filter((prediction) => prediction.playerId === player.id).length;
-      return `
+  const players = Object.values(state.players).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  els.usersAdmin.innerHTML =
+    players
+      .map((player) => {
+        const stats = calculatePlayerStats(player.id);
+        const predictionCount = Object.values(state.predictions).filter(
+          (prediction) => prediction.playerId === player.id,
+        ).length;
+        return `
         <article class="user-admin-row">
           <div>
             <strong>${escapeHtml(player.name)}</strong>
@@ -2375,8 +2898,8 @@ function renderUsersAdmin() {
           <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
         </article>
       `;
-    })
-    .join("") || `<p class="muted">No users to delete yet.</p>`;
+      })
+      .join("") || `<p class="muted">No users to delete yet.</p>`;
 
   els.usersAdmin.querySelectorAll(".delete-user").forEach((button) => {
     button.addEventListener("click", () => {
@@ -2389,7 +2912,9 @@ async function deleteUser(playerId) {
   const player = state.players[playerId];
   if (!player) return;
 
-  const confirmed = window.confirm(`Delete ${player.name} and all of their predictions?`);
+  const confirmed = window.confirm(
+    `Delete ${player.name} and all of their predictions?`,
+  );
   if (!confirmed) return;
 
   await deletePlayerFromSupabase(playerId);
@@ -2432,27 +2957,39 @@ function calculatePlayerStats(playerId) {
 function scorePrediction(prediction, result) {
   const predictedOutcome = outcome(prediction.homeScore, prediction.awayScore);
   const actualOutcome = outcome(result.homeScore, result.awayScore);
-  const exactScore = prediction.homeScore === result.homeScore && prediction.awayScore === result.awayScore;
+  const exactScore =
+    prediction.homeScore === result.homeScore &&
+    prediction.awayScore === result.awayScore;
   const correctOutcome = predictedOutcome === actualOutcome;
   const correctTeamGoals =
-    prediction.homeScore === result.homeScore || prediction.awayScore === result.awayScore;
+    prediction.homeScore === result.homeScore ||
+    prediction.awayScore === result.awayScore;
 
   let points = 0;
   const breakdown = [];
 
   if (exactScore) {
     points = state.config.points.exactScore;
-    breakdown.push({ label: "Perfect score", points: state.config.points.exactScore });
+    breakdown.push({
+      label: "Perfect score",
+      points: state.config.points.exactScore,
+    });
     return { points, exactScore, correctOutcome, breakdown };
   }
 
   if (correctOutcome) {
     points += state.config.points.correctOutcome;
-    breakdown.push({ label: "Correct result", points: state.config.points.correctOutcome });
+    breakdown.push({
+      label: "Correct result",
+      points: state.config.points.correctOutcome,
+    });
   }
   if (correctTeamGoals) {
     points += state.config.points.correctTeamGoalsBonus;
-    breakdown.push({ label: "Team goals", points: state.config.points.correctTeamGoalsBonus });
+    breakdown.push({
+      label: "Team goals",
+      points: state.config.points.correctTeamGoalsBonus,
+    });
   }
 
   return { points, exactScore, correctOutcome, breakdown };
@@ -2465,7 +3002,9 @@ function outcome(homeScore, awayScore) {
 }
 
 function isLocked(match) {
-  const lockAt = new Date(match.kickoff).getTime() - state.config.lockMinutesBeforeKickoff * 60 * 1000;
+  const lockAt =
+    new Date(match.kickoff).getTime() -
+    state.config.lockMinutesBeforeKickoff * 60 * 1000;
   return Date.now() >= lockAt;
 }
 
@@ -2477,9 +3016,11 @@ function predictionKey(playerId, matchId) {
   return `${playerId}:${matchId}`;
 }
 
-function teamHtml(team) {
+function teamHtml(team, options = {}) {
   const flagCode = TEAM_FLAG_CODES[team];
-  const name = `<span class="team-name">${escapeHtml(team)}</span>`;
+  const classes = ["team-name", options.className].filter(Boolean).join(" ");
+  const title = options.title ? ` title="${escapeHtml(team)}"` : "";
+  const name = `<span class="${escapeHtml(classes)}"${title}>${escapeHtml(team)}</span>`;
   if (!flagCode) return name;
   return `${teamFlagHtml(team)}${name}`;
 }
@@ -2542,7 +3083,9 @@ function formatShortDate(date) {
 }
 
 function labelize(value) {
-  return value.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
+  return value
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (char) => char.toUpperCase());
 }
 
 function escapeHtml(value) {

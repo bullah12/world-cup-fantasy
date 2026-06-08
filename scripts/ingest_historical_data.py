@@ -3,6 +3,8 @@ from supabase import create_client
 from dotenv import load_dotenv
 import os
 
+from team_name_mapper import canonical_team_name
+
 load_dotenv()
 
 supabase = create_client(
@@ -15,6 +17,10 @@ df = pd.read_csv("data/results.csv")
 df = df.rename(columns={
     "date": "match_date"
 })
+
+# Clean team names
+df["home_team"] = df["home_team"].apply(canonical_team_name)
+df["away_team"] = df["away_team"].apply(canonical_team_name)
 
 # Clean dates
 df["match_date"] = pd.to_datetime(df["match_date"]).dt.date.astype(str)
