@@ -13,6 +13,8 @@ const DEFAULT_LEAGUES = {
 };
 const DEFAULT_LEAGUE_ID = "brum-family";
 const WORLDWIDE_SCOPE = "worldwide";
+const SCORE_SAVE_DEBOUNCE_MS = 1000;
+const HISTORY_MIN_SAVE_INTERVAL_MS = 1000;
 const BUILT_IN_MODEL_OPTIONS = [
   { id: "elo-poisson-v1", label: "Elo Poisson" },
   { id: "favourite-lean", label: "Favourite lean" },
@@ -931,6 +933,7 @@ let leaderboardScope = DEFAULT_LEAGUE_ID;
 let selectedModelVersion = "";
 
 let modelPredictions = [];
+const recentPredictionHistoryWrites = new Map();
 
 const els = {
   playerForm: document.querySelector("#player-form"),
@@ -1024,6 +1027,7 @@ els.modalLoginPlayer.addEventListener("click", async () => {
     }
 
     els.modalPlayerPassword.value = "";
+    await updatePlayerLastLoggedIn(playerId);
     setActivePlayer(playerId);
     closePlayerModal();
   } catch (error) {
@@ -1175,6 +1179,7 @@ els.playerForm.addEventListener("submit", async (event) => {
 
     state.players[player.id] = player;
     await savePlayer(player);
+    await updatePlayerLastLoggedIn(player.id);
 
     setActivePlayer(player.id);
     els.createdPlayer.textContent = "";
@@ -1362,6 +1367,7 @@ async function loadSupabaseState() {
         leagueId:
           normalizeLeagueIds(player.league_ids || player.league_id)[0] || "",
         passwordHash: player.password_hash || "",
+        lastLoggedIn: player.last_logged_in || "",
         createdAt: player.created_at,
       },
     ]),
@@ -1540,16 +1546,62 @@ async function savePrediction(prediction) {
     away_score: prediction.awayScore,
     updated_at: prediction.updatedAt,
   });
+  await savePredictionHistory({
+    ...prediction,
+    action: "save",
+  });
 }
 
 async function deletePrediction(playerId, matchId) {
   if (!supabaseClient) return;
+  const deletedAt = new Date().toISOString();
   const { error } = await supabaseClient
     .from("predictions")
     .delete()
     .eq("player_id", playerId)
     .eq("match_id", matchId);
   if (error) throw error;
+  await savePredictionHistory({
+    playerId,
+    matchId,
+    homeScore: null,
+    awayScore: null,
+    updatedAt: deletedAt,
+    action: "clear",
+  });
+}
+
+async function savePredictionHistory(prediction) {
+  if (!supabaseClient) return;
+  const historyKey = `${prediction.playerId}:${prediction.matchId}:${prediction.action}`;
+  const savedAt = new Date(prediction.updatedAt).getTime();
+  const lastSavedAt = recentPredictionHistoryWrites.get(historyKey) || 0;
+  if (
+    Number.isFinite(savedAt) &&
+    savedAt - lastSavedAt < HISTORY_MIN_SAVE_INTERVAL_MS
+  ) {
+    return;
+  }
+
+  recentPredictionHistoryWrites.set(
+    historyKey,
+    Number.isFinite(savedAt) ? savedAt : Date.now(),
+  );
+
+  const { error } = await supabaseClient.from("prediction_history").insert({
+    player_id: prediction.playerId,
+    match_id: prediction.matchId,
+    home_score: prediction.homeScore,
+    away_score: prediction.awayScore,
+    action: prediction.action,
+    created_at: prediction.updatedAt,
+  });
+  if (error) {
+    console.warn(
+      "Could not save prediction history. Add prediction_history in Supabase if you want full history.",
+      error,
+    );
+  }
 }
 
 async function saveResult(result) {
@@ -1823,6 +1875,25 @@ async function savePlayerLeagues(player) {
   if (error) throw error;
 }
 
+async function updatePlayerLastLoggedIn(playerId) {
+  const player = state.players[playerId];
+  if (!player) return;
+
+  const timestamp = new Date().toISOString();
+  player.lastLoggedIn = timestamp;
+
+  if (!supabaseClient) return;
+
+  const { error } = await supabaseClient
+    .from("players")
+    .update({ last_logged_in: timestamp })
+    .eq("id", playerId);
+
+  if (error) {
+    console.warn("Could not update last_logged_in. Add the column in Supabase if you want login tracking.", error);
+  }
+}
+
 function renderModalPlayerOptions() {
   els.modalPlayerPassword.value = "";
   els.modalLoginMessage.textContent = "";
@@ -1960,6 +2031,7 @@ function renderMatchRow(match) {
 
   const form = card.querySelector("form");
   form.dataset.matchId = match.id;
+  form.dataset.playerId = activePlayerId;
   form.homeScore.value = prediction ? prediction.homeScore : "";
   form.awayScore.value = prediction ? prediction.awayScore : "";
   form.homeScore.disabled = locked || !activePlayerId;
@@ -2757,17 +2829,33 @@ function isTodayKey(dateKey) {
   return dateKey === getDateKey(new Date());
 }
 
-async function handlePredictionInput(event) {
+function handlePredictionInput(event) {
   const form = event.currentTarget;
   const matchId = form.dataset.matchId;
   const match = matchesData.find((item) => item.id === matchId);
   if (!activePlayerId || !match || isLocked(match)) return;
 
+  clearTimeout(form.saveTimer);
+  updateAutosaveMessage(form, "Saving...");
+  form.saveTimer = setTimeout(() => {
+    savePredictionForm(form).catch((error) => {
+      console.error(error);
+      updateAutosaveMessage(form, "Save failed.");
+    });
+  }, SCORE_SAVE_DEBOUNCE_MS);
+}
+
+async function savePredictionForm(form) {
+  const playerId = form.dataset.playerId;
+  const matchId = form.dataset.matchId;
+  const match = matchesData.find((item) => item.id === matchId);
+  if (!playerId || !match || isLocked(match)) return;
+
   const homeValue = form.homeScore.value;
   const awayValue = form.awayScore.value;
   if (homeValue === "" && awayValue === "") {
-    delete state.predictions[predictionKey(activePlayerId, matchId)];
-    await deletePrediction(activePlayerId, matchId);
+    delete state.predictions[predictionKey(playerId, matchId)];
+    await deletePrediction(playerId, matchId);
     saveState();
     updateAutosaveMessage(form, "Prediction cleared.");
     renderPlayerPredictions();
@@ -2776,7 +2864,7 @@ async function handlePredictionInput(event) {
   if (homeValue === "" || awayValue === "") return;
 
   const prediction = {
-    playerId: activePlayerId,
+    playerId,
     matchId,
     homeScore: Number(homeValue),
     awayScore: Number(awayValue),
@@ -3232,7 +3320,7 @@ function handleAdminResultInput(event) {
       console.error(error);
       status.textContent = "Save failed";
     });
-  }, 350);
+  }, SCORE_SAVE_DEBOUNCE_MS);
 }
 
 async function saveAdminResultForm(form) {
@@ -3378,11 +3466,14 @@ function renderUsersAdmin() {
         const predictionCount = Object.values(state.predictions).filter(
           (prediction) => prediction.playerId === player.id,
         ).length;
+        const lastLoggedIn = player.lastLoggedIn
+          ? formatDate(new Date(player.lastLoggedIn))
+          : "Never logged";
         return `
         <article class="user-admin-row">
           <div>
             <strong>${escapeHtml(player.name)}</strong>
-            <p class="muted">${escapeHtml(player.id)} - ${escapeHtml(leagueNames(player.leagueIds) || "Worldwide only")} - ${stats.points} pts - ${predictionCount} predictions</p>
+            <p class="muted">${escapeHtml(player.id)} - ${escapeHtml(leagueNames(player.leagueIds) || "Worldwide only")} - ${stats.points} pts - ${predictionCount} predictions - Last login: ${escapeHtml(lastLoggedIn)}</p>
           </div>
           <button class="secondary delete-user" type="button" data-player-id="${escapeHtml(player.id)}">Delete</button>
         </article>
