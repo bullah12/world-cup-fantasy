@@ -163,13 +163,14 @@ const els = {
   matchTemplate: document.querySelector("#match-row-template"),
   leaderboardBody: document.querySelector("#leaderboard-body"),
   leaderboardCount: document.querySelector("#leaderboard-count"),
+  pointsBreakdownList: document.querySelector("#points-breakdown-list"),
   predictionTotal: document.querySelector("#prediction-total"),
   predictionPlayerSelect: document.querySelector("#prediction-player-select"),
   playerPredictions: document.querySelector("#player-predictions"),
   resultsAdmin: document.querySelector("#results-admin"),
   scoringConfig: document.querySelector("#scoring-config"),
   saveConfig: document.querySelector("#save-config"),
-  navTabs: document.querySelectorAll(".nav-tab"),
+  viewControls: document.querySelectorAll("[data-view-target]"),
   adminLogin: document.querySelector("#admin-login"),
   adminContent: document.querySelector("#admin-content"),
   adminLoginForm: document.querySelector("#admin-login-form"),
@@ -201,9 +202,9 @@ els.modalLoginPlayer.addEventListener("click", () => {
   closePlayerModal();
 });
 
-els.navTabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    showView(tab.dataset.viewTarget);
+els.viewControls.forEach((control) => {
+  control.addEventListener("click", () => {
+    showView(control.dataset.viewTarget);
   });
 });
 
@@ -618,6 +619,7 @@ function render() {
   renderSummary();
   renderMatches();
   renderLeaderboard();
+  renderPointsBreakdown();
   renderPlayerPredictions();
   renderAdminAccess();
   renderResultsAdmin();
@@ -629,8 +631,8 @@ function showView(viewId) {
   document.querySelectorAll(".app-view").forEach((view) => {
     view.classList.toggle("active", view.id === viewId);
   });
-  els.navTabs.forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.viewTarget === viewId);
+  els.viewControls.forEach((control) => {
+    control.classList.toggle("active", control.dataset.viewTarget === viewId);
   });
 }
 
@@ -987,6 +989,25 @@ function renderLeaderboard() {
     .join("") || `<tr><td colspan="5" class="muted">No players yet.</td></tr>`;
 }
 
+function renderPointsBreakdown() {
+  const rules = [
+    ["Perfect score", state.config.points.exactScore, "Exact scoreline. This replaces all other bonuses."],
+    ["Correct result", state.config.points.correctOutcome, "Right winner, or correctly predicted a draw."],
+    ["Goal difference", state.config.points.correctGoalDifferenceBonus, "Right margin between the teams."],
+    ["Team goals", state.config.points.correctTeamGoalsBonus, "One team's goals exactly right."],
+  ];
+
+  els.pointsBreakdownList.innerHTML = rules
+    .map(([label, points, description]) => `
+      <article class="points-rule">
+        <strong>${escapeHtml(label)}</strong>
+        <span class="points-rule-value">${points} pt${points === 1 ? "" : "s"}</span>
+        <p>${escapeHtml(description)}</p>
+      </article>
+    `)
+    .join("");
+}
+
 function leaderboardFormHtml(playerId) {
   const recent = getRecentPlayerForm(playerId);
   const items = [...recent];
@@ -1019,7 +1040,7 @@ function getRecentPlayerForm(playerId) {
 function formDotHtml(item) {
   const status = getPredictionStatus(item.score);
   const tooltip = leaderboardBreakdownHtml(item.match, item.result, item.score);
-  const label = `${item.match.home} ${item.result.homeScore}-${item.result.awayScore} ${item.match.away}. Total ${item.score.points} points.`;
+  const label = `${item.match.home} ${item.result.homeScore}-${item.result.awayScore} ${item.match.away}. ${pointsLabel(item.score.points)}.`;
   return `
     <button class="form-dot ${status.className}" type="button" aria-label="${escapeHtml(label)}" aria-expanded="false">
       <span class="status-tooltip">${tooltip}</span>
@@ -1056,7 +1077,7 @@ function renderPlayerPredictions() {
           ? predictionBreakdownHtml(match, result, score)
           : `<strong>Result pending</strong><span>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</span>`;
         const detailsLabel = result
-          ? `Result: ${match.home} ${result.homeScore}-${result.awayScore} ${match.away}. ${score.breakdown.map((item) => `${item.label} ${item.points} points`).join(", ")}. Total ${score.points} points.`
+          ? `Result: ${match.home} ${result.homeScore}-${result.awayScore} ${match.away}. ${pointsLabel(score.points)}.`
           : `Result pending for ${match.home} vs ${match.away}.`;
 
         return `
@@ -1107,7 +1128,7 @@ function getPredictionStatus(score) {
   if (score.exactScore) {
     return {
       className: "status-perfect",
-      label: `Perfect result, ${score.points} points`,
+      label: `Perfect score, ${pointsLabel(score.points)}`,
       pointsText: score.points,
     };
   }
@@ -1115,14 +1136,14 @@ function getPredictionStatus(score) {
   if (score.correctOutcome) {
     return {
       className: "status-winner",
-      label: `Winner correct, ${score.points} points`,
+      label: `Correct result, ${pointsLabel(score.points)}`,
       pointsText: score.points,
     };
   }
 
   return {
     className: "status-zero",
-    label: `No points, ${score.points} points`,
+    label: "No points",
     pointsText: score.points,
   };
 }
@@ -1130,7 +1151,7 @@ function getPredictionStatus(score) {
 function predictionBreakdownHtml(match, result, score) {
   const rows = score.breakdown.length
     ? score.breakdown.map((item) => `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`).join("")
-    : `<span>No scoring rules matched <strong>0</strong></span>`;
+    : `<span>No points <strong>0</strong></span>`;
 
   return `
     <strong>Result: ${teamFlagHtml(match.home)} ${result.homeScore}-${result.awayScore} ${teamFlagHtml(match.away)}</strong>
@@ -1142,13 +1163,17 @@ function predictionBreakdownHtml(match, result, score) {
 function leaderboardBreakdownHtml(match, result, score) {
   const rows = score.breakdown.length
     ? score.breakdown.map((item) => `<span>${escapeHtml(item.label)} <strong>${item.points}</strong></span>`).join("")
-    : `<span>No scoring rules matched <strong>0</strong></span>`;
+    : `<span>No points <strong>0</strong></span>`;
 
   return `
     <strong>${teamFlagHtml(match.home)} ${result.homeScore}-${result.awayScore} ${teamFlagHtml(match.away)}</strong>
     ${rows}
-    <span>Total points <strong>${score.points}</strong></span>
+    <span>Total <strong>${score.points}</strong></span>
   `;
+}
+
+function pointsLabel(points) {
+  return points === 0 ? "No points" : `${points} pt${points === 1 ? "" : "s"}`;
 }
 
 function renderResultsAdmin() {
@@ -1302,21 +1327,21 @@ function scorePrediction(prediction, result) {
 
   if (exactScore) {
     points = state.config.points.exactScore;
-    breakdown.push({ label: "Exact correct result", points: state.config.points.exactScore });
+    breakdown.push({ label: "Perfect score", points: state.config.points.exactScore });
     return { points, exactScore, correctOutcome, breakdown };
   }
 
   if (correctOutcome) {
     points += state.config.points.correctOutcome;
-    breakdown.push({ label: "Correct outcome", points: state.config.points.correctOutcome });
+    breakdown.push({ label: "Correct result", points: state.config.points.correctOutcome });
   }
   if (correctGoalDifference) {
     points += state.config.points.correctGoalDifferenceBonus;
-    breakdown.push({ label: "Correct goal difference", points: state.config.points.correctGoalDifferenceBonus });
+    breakdown.push({ label: "Goal difference", points: state.config.points.correctGoalDifferenceBonus });
   }
   if (correctTeamGoals) {
     points += state.config.points.correctTeamGoalsBonus;
-    breakdown.push({ label: "Correct goals scored for 1 team", points: state.config.points.correctTeamGoalsBonus });
+    breakdown.push({ label: "Team goals", points: state.config.points.correctTeamGoalsBonus });
   }
 
   return { points, exactScore, correctOutcome, breakdown };

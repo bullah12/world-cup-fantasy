@@ -15,7 +15,7 @@
         </div>
         <div class="nav-tabs" aria-label="Page tabs">
           <button class="nav-tab active" type="button" data-view-target="main-view">Home</button>
-          <button class="nav-tab" type="button" data-view-target="admin-view">Admin</button>
+          <button class="nav-tab" type="button" data-view-target="leaderboard-view">Leaderboard</button>
         </div>
         <div class="nav-player">
           <button id="player-nav-button" class="player-nav-button" type="button">
@@ -88,27 +88,6 @@
           </div>
 
           <aside class="side-stack">
-            <section id="leaderboard" class="panel">
-              <div class="section-head small">
-                <h2>Leaderboard</h2>
-                <span id="leaderboard-count" class="pill"></span>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Player</th>
-                      <th>Pts</th>
-                      <th>Correct</th>
-                      <th>Form</th>
-                    </tr>
-                  </thead>
-                  <tbody id="leaderboard-body"></tbody>
-                </table>
-              </div>
-            </section>
-
             <section class="panel">
               <div class="prediction-panel-head">
                 <div>
@@ -127,6 +106,39 @@
               <div id="player-predictions" class="prediction-list"></div>
             </section>
           </aside>
+        </section>
+      </section>
+
+      <section id="leaderboard-view" class="app-view">
+        <section class="leaderboard-page">
+          <section id="leaderboard" class="panel">
+            <div class="section-head small">
+              <div>
+                <p class="eyebrow">Standings</p>
+                <h2>Leaderboard</h2>
+              </div>
+              <span id="leaderboard-count" class="pill"></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Pts</th>
+                    <th>Correct</th>
+                    <th>Form</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="points-breakdown" class="panel points-breakdown">
+            <h2>Points breakdown</h2>
+            <div id="points-breakdown-list" class="points-breakdown-list"></div>
+          </section>
         </section>
       </section>
 
@@ -178,6 +190,10 @@
         </section>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <button class="admin-footer-button" type="button" data-view-target="admin-view">Admin</button>
+    </footer>
 
     <template id="match-row-template">
       <article class="match-row">

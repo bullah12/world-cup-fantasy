@@ -382,6 +382,13 @@ h3 {
   gap: 1rem;
 }
 
+.leaderboard-page {
+  display: grid;
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 900px;
+}
+
 .section-head {
   align-items: end;
   display: flex;
@@ -878,6 +885,47 @@ th {
   font-size: 1.15rem;
 }
 
+.points-breakdown {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.points-breakdown-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.points-rule {
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.2rem 0.65rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.7rem;
+}
+
+.points-rule strong {
+  font-size: 0.95rem;
+}
+
+.points-rule p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  grid-column: 1 / -1;
+  line-height: 1.4;
+}
+
+.points-rule-value {
+  background: #eef2ea;
+  border-radius: 999px;
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+}
+
 .form-strip {
   display: flex;
   gap: 0.25rem;
@@ -1201,6 +1249,26 @@ th {
 
 .admin-content .admin-layout {
   margin-top: 0;
+}
+
+.site-footer {
+  margin: 0 auto;
+  max-width: 1220px;
+  padding: 0 1.4rem 1.4rem;
+  text-align: center;
+}
+
+.admin-footer-button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 0.65rem 0.9rem;
+}
+
+.admin-footer-button:hover,
+.admin-footer-button.active {
+  background: #e7ede5;
+  color: var(--accent-dark);
 }
 
 @media (max-width: 920px) {
