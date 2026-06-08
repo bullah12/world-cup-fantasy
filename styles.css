@@ -1447,6 +1447,20 @@ th {
     top: 0.85rem;
   }
 
+  .rank-badge {
+    background: var(--gold);
+    border-radius: 999px;
+    color: #1d1a0b;
+    gap: 0.25rem;
+    height: auto;
+    padding: 0.4rem 0.65rem;
+    width: auto;
+  }
+
+  .rank-badge::before {
+    content: "Rank";
+  }
+
   .leaderboard-row td:nth-child(2) {
     display: block;
     padding-right: 3rem;
