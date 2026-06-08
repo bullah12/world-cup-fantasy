@@ -13,6 +13,11 @@ const DEFAULT_LEAGUES = {
 };
 const DEFAULT_LEAGUE_ID = "brum-family";
 const WORLDWIDE_SCOPE = "worldwide";
+const BUILT_IN_MODEL_OPTIONS = [
+  { id: "elo-poisson-v1", label: "Elo Poisson" },
+  { id: "favourite-lean", label: "Favourite lean" },
+  { id: "upset-lean", label: "Upset lean" },
+];
 
 const SUPABASE_URL = "https://lxawkhvkhbcdpermvqbc.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -923,6 +928,7 @@ let adminUnlocked = false;
 let countdownMatchId = "";
 let selectedTeamView = "groups";
 let leaderboardScope = DEFAULT_LEAGUE_ID;
+let selectedModelVersion = "";
 
 let modelPredictions = [];
 
@@ -975,6 +981,7 @@ const els = {
   leagueAdminMessage: document.querySelector("#league-admin-message"),
   leaguesAdmin: document.querySelector("#leagues-admin"),
   usersAdmin: document.querySelector("#users-admin"),
+  modelVersionSelect: document.querySelector("#model-version-select"),
   statsSummary: document.querySelector("#stats-summary"),
   matchPredictions: document.querySelector("#match-predictions"),
 };
@@ -982,6 +989,11 @@ const els = {
 els.predictionPlayerSelect.addEventListener("change", () => {
   viewedPredictionPlayerId = els.predictionPlayerSelect.value;
   renderPlayerPredictions();
+});
+
+els.modelVersionSelect.addEventListener("change", () => {
+  selectedModelVersion = els.modelVersionSelect.value;
+  renderStats();
 });
 
 els.playerNavButton.addEventListener("click", () => {
@@ -2027,7 +2039,10 @@ function renderSelectedMatchDay(dateKey, matches) {
 function renderStats() {
   if (!els.statsSummary || !els.matchPredictions) return;
 
-  if (!modelPredictions.length) {
+  renderModelVersionOptions();
+  const activePredictions = getActiveModelPredictions();
+
+  if (!activePredictions.length) {
     els.statsSummary.innerHTML = `
       <section class="stats-hero">
         <div>
@@ -2041,13 +2056,20 @@ function renderStats() {
     return;
   }
 
-  const predictionSummaries = modelPredictions.map(modelPredictionSummary);
+  const predictionSummaries = activePredictions.map(modelPredictionSummary);
   const strongestFavourite = [...predictionSummaries].sort(
     (a, b) => b.topProbability - a.topProbability,
   )[0];
   const drawLeans = predictionSummaries.filter(
     (prediction) => prediction.topOutcome === "Draw",
   ).length;
+  const tournament = buildTournamentPrediction(activePredictions);
+  const openGroups = tournament.groups
+    .map(([group, table]) => ({
+      group,
+      spread: table[0].points - table[2].points,
+    }))
+    .sort((a, b) => a.spread - b.spread);
 
   els.statsSummary.innerHTML = `
     <section class="stats-hero">
@@ -2065,22 +2087,142 @@ function renderStats() {
     <div class="stats-grid">
       <article class="stat-card">
         <span>Fixtures predicted</span>
-        <strong>${modelPredictions.length}</strong>
+        <strong>${activePredictions.length}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Projected champion</span>
+        <strong>${teamHtml(tournament.champion || "TBD")}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Closest group</span>
+        <strong>${escapeHtml(openGroups[0]?.group || "TBD")}</strong>
       </article>
       <article class="stat-card">
         <span>Draw leans</span>
         <strong>${drawLeans}</strong>
       </article>
-      <article class="stat-card">
-        <span>Top confidence</span>
-        <strong>${strongestFavourite.topProbability}%</strong>
-      </article>
     </div>
   `;
 
-  els.matchPredictions.innerHTML = modelPredictions
-    .map(modelPredictionCardHtml)
+  els.matchPredictions.innerHTML = `
+    ${tournamentPredictionHtml(tournament)}
+    <section class="stats-section">
+      <div class="section-head small">
+        <div>
+          <p class="eyebrow">Group projections</p>
+          <h3>Predicted tables</h3>
+        </div>
+      </div>
+      <div class="group-projection-grid">
+        ${tournament.groups.map(groupProjectionHtml).join("")}
+      </div>
+    </section>
+    <section class="stats-section">
+      <div class="section-head small">
+        <div>
+          <p class="eyebrow">Fixture model</p>
+          <h3>Match-by-match predictions</h3>
+        </div>
+      </div>
+      <div class="stats-list">
+        ${activePredictions.map(modelPredictionCardHtml).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderModelVersionOptions() {
+  const versions = getModelVersions();
+  if (!selectedModelVersion || !versions.includes(selectedModelVersion)) {
+    selectedModelVersion = versions[0] || "";
+  }
+
+  els.modelVersionSelect.innerHTML = versions
+    .map(
+      (version) =>
+        `<option value="${escapeHtml(version)}">${escapeHtml(modelLabel(version))}</option>`,
+    )
     .join("");
+  els.modelVersionSelect.value = selectedModelVersion;
+  els.modelVersionSelect.disabled = versions.length <= 1;
+}
+
+function getModelVersions() {
+  const storedVersions = [
+    ...new Set(
+      modelPredictions
+        .map((prediction) => prediction.model_version || "default")
+        .filter(Boolean),
+    ),
+  ].sort();
+
+  return [
+    ...BUILT_IN_MODEL_OPTIONS.map((model) => model.id),
+    ...storedVersions.filter(
+      (version) => !BUILT_IN_MODEL_OPTIONS.some((model) => model.id === version),
+    ),
+  ];
+}
+
+function getActiveModelPredictions() {
+  const version = selectedModelVersion || getModelVersions()[0] || "";
+  const baseVersion = getStoredModelVersion(version);
+  const predictions = modelPredictions.filter(
+    (prediction) => (prediction.model_version || "default") === baseVersion,
+  );
+
+  if (version === "favourite-lean") {
+    return predictions.map((prediction) => adjustPredictionConfidence(prediction, 1.16));
+  }
+
+  if (version === "upset-lean") {
+    return predictions.map((prediction) => adjustPredictionConfidence(prediction, 0.86));
+  }
+
+  return predictions;
+}
+
+function getStoredModelVersion(version) {
+  const storedVersions = [
+    ...new Set(
+      modelPredictions
+        .map((prediction) => prediction.model_version || "default")
+        .filter(Boolean),
+    ),
+  ];
+  if (storedVersions.includes(version)) return version;
+  if (storedVersions.includes("elo-poisson-v1")) return "elo-poisson-v1";
+  return storedVersions[0] || "";
+}
+
+function adjustPredictionConfidence(prediction, exponent) {
+  const probabilities = [
+    Number(prediction.home_win_prob) || 0,
+    Number(prediction.draw_prob) || 0,
+    Number(prediction.away_win_prob) || 0,
+  ].map((value) => Math.pow(Math.max(value, 0.01), exponent));
+  const total = probabilities.reduce((sum, value) => sum + value, 0);
+  const [home, draw, away] = probabilities.map((value) =>
+    roundPercent((value / total) * 100),
+  );
+
+  return {
+    ...prediction,
+    home_win_prob: home,
+    draw_prob: draw,
+    away_win_prob: away,
+  };
+}
+
+function roundPercent(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function modelLabel(version) {
+  const builtIn = BUILT_IN_MODEL_OPTIONS.find((model) => model.id === version);
+  if (builtIn) return builtIn.label;
+  if (version === "elo-poisson-v1") return "Elo Poisson";
+  return version;
 }
 
 function modelPredictionSummary(prediction) {
@@ -2148,6 +2290,273 @@ function probabilityRowHtml(label, probability, showFlag = false) {
       <strong>${value}%</strong>
     </div>
   `;
+}
+
+function buildTournamentPrediction(predictions) {
+  const predictionByMatch = new Map(
+    predictions.map((prediction) => [prediction.match_id, prediction]),
+  );
+  const groups = buildPredictedGroups(predictionByMatch);
+  const thirdPlaceTeams = groups
+    .map(([group, table]) => ({ ...table[2], group }))
+    .sort(compareGroupTeams)
+    .slice(0, 8);
+  const matchWinners = {};
+  const usedThirdPlaceTeams = new Set();
+  const knockoutMatches = MATCHES.filter((match) => !/^Group [A-L]$/.test(match.group));
+  const bracket = [];
+
+  knockoutMatches.forEach((match) => {
+    const home = resolveKnockoutSlot(
+      match.home,
+      groups,
+      thirdPlaceTeams,
+      matchWinners,
+      usedThirdPlaceTeams,
+    );
+    const away = resolveKnockoutSlot(
+      match.away,
+      groups,
+      thirdPlaceTeams,
+      matchWinners,
+      usedThirdPlaceTeams,
+    );
+    const prediction = predictKnockoutMatch(home, away, groups);
+
+    matchWinners[match.id] = {
+      winner: prediction.winner,
+      loser: prediction.loser,
+    };
+    bracket.push({
+      id: match.id,
+      round: match.group,
+      home,
+      away,
+      ...prediction,
+    });
+  });
+
+  return {
+    groups,
+    bracket,
+    champion: matchWinners.M104?.winner || "",
+  };
+}
+
+function buildPredictedGroups(predictionByMatch) {
+  const groupMap = new Map();
+  MATCHES.filter((match) => /^Group [A-L]$/.test(match.group)).forEach((match) => {
+    if (!groupMap.has(match.group)) groupMap.set(match.group, new Map());
+    const table = groupMap.get(match.group);
+    [match.home, match.away].forEach((team) => {
+      if (!table.has(team)) {
+        table.set(team, {
+          team,
+          played: 0,
+          points: 0,
+          gf: 0,
+          ga: 0,
+          gd: 0,
+          modelScore: 0,
+        });
+      }
+    });
+
+    const prediction = predictionByMatch.get(match.id);
+    if (!prediction) return;
+
+    const home = table.get(match.home);
+    const away = table.get(match.away);
+    const homeGoals = Number(prediction.predicted_home_goals) || 0;
+    const awayGoals = Number(prediction.predicted_away_goals) || 0;
+    const homeWinProb = Number(prediction.home_win_prob) || 0;
+    const drawProb = Number(prediction.draw_prob) || 0;
+    const awayWinProb = Number(prediction.away_win_prob) || 0;
+
+    home.played += 1;
+    away.played += 1;
+    home.gf += homeGoals;
+    home.ga += awayGoals;
+    away.gf += awayGoals;
+    away.ga += homeGoals;
+    home.points += (homeWinProb * 3 + drawProb) / 100;
+    away.points += (awayWinProb * 3 + drawProb) / 100;
+    home.modelScore += homeWinProb + drawProb / 2;
+    away.modelScore += awayWinProb + drawProb / 2;
+  });
+
+  return [...groupMap.entries()]
+    .map(([group, table]) => [
+      group,
+      [...table.values()]
+        .map((team) => ({
+          ...team,
+          gd: team.gf - team.ga,
+        }))
+        .sort(compareGroupTeams),
+    ])
+    .sort(([groupA], [groupB]) =>
+      groupA.localeCompare(groupB, undefined, { numeric: true }),
+    );
+}
+
+function compareGroupTeams(a, b) {
+  return (
+    b.points - a.points ||
+    b.gd - a.gd ||
+    b.gf - a.gf ||
+    b.modelScore - a.modelScore ||
+    a.team.localeCompare(b.team)
+  );
+}
+
+function resolveKnockoutSlot(
+  slot,
+  groups,
+  thirdPlaceTeams,
+  matchWinners,
+  usedThirdPlaceTeams,
+) {
+  const winnerMatch = slot.match(/^Match (\d+) Winner$/);
+  if (winnerMatch) {
+    return matchWinners[matchIdFromNumber(winnerMatch[1])]?.winner || slot;
+  }
+
+  const loserMatch = slot.match(/^Match (\d+) Loser$/);
+  if (loserMatch) {
+    return matchWinners[matchIdFromNumber(loserMatch[1])]?.loser || slot;
+  }
+
+  const groupSlot = slot.match(/^Group ([A-L]) (Winner|Runner-up)$/);
+  if (groupSlot) {
+    const group = groups.find(([name]) => name === `Group ${groupSlot[1]}`);
+    return group?.[1]?.[groupSlot[2] === "Winner" ? 0 : 1]?.team || slot;
+  }
+
+  const thirdSlot = slot.match(/^Group ([A-L/]+) 3rd Place$/);
+  if (thirdSlot) {
+    const allowedGroups = thirdSlot[1].split("/").map((group) => `Group ${group}`);
+    const thirdTeam = thirdPlaceTeams.find(
+      (team) =>
+        allowedGroups.includes(team.group) && !usedThirdPlaceTeams.has(team.team),
+    );
+    if (thirdTeam) {
+      usedThirdPlaceTeams.add(thirdTeam.team);
+      return thirdTeam.team;
+    }
+  }
+
+  return slot;
+}
+
+function matchIdFromNumber(matchNumber) {
+  return `M${String(matchNumber).padStart(3, "0")}`;
+}
+
+function predictKnockoutMatch(home, away, groups) {
+  const homePower = teamTournamentPower(home, groups);
+  const awayPower = teamTournamentPower(away, groups);
+  const winner = homePower >= awayPower ? home : away;
+  const loser = winner === home ? away : home;
+  const confidence = Math.min(82, Math.max(52, Math.round(55 + Math.abs(homePower - awayPower) * 4)));
+
+  return {
+    winner,
+    loser,
+    confidence,
+  };
+}
+
+function teamTournamentPower(teamName, groups) {
+  for (const [, table] of groups) {
+    const team = table.find((row) => row.team === teamName);
+    if (team) return team.points * 3 + team.gd * 1.5 + team.gf + team.modelScore / 30;
+  }
+
+  return 0;
+}
+
+function tournamentPredictionHtml(tournament) {
+  const rounds = groupBracketByRound(tournament.bracket);
+  const final = rounds.get("Final")?.[0];
+
+  return `
+    <section class="stats-section tournament-predictor">
+      <div class="section-head small">
+        <div>
+          <p class="eyebrow">Tournament predictor</p>
+          <h3>Projected knockout route</h3>
+          <p class="muted">Group tables use expected points from the selected model. Knockout winners use projected group strength, with the best available third-place teams slotted into the official route.</p>
+        </div>
+        <span class="pill">${final ? `${escapeHtml(final.confidence)}% final call` : "Projected"}</span>
+      </div>
+      <div class="champion-card">
+        <span>Projected winner</span>
+        <strong>${teamHtml(tournament.champion || "TBD")}</strong>
+      </div>
+      <div class="bracket-grid">
+        ${[...rounds.entries()].map(bracketRoundHtml).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function groupBracketByRound(bracket) {
+  const roundOrder = [
+    "Round of 32",
+    "Round of 16",
+    "Quarter-finals",
+    "Semi-finals",
+    "Final",
+  ];
+  const rounds = new Map(roundOrder.map((round) => [round, []]));
+  bracket
+    .filter((match) => rounds.has(match.round))
+    .forEach((match) => rounds.get(match.round).push(match));
+  return rounds;
+}
+
+function bracketRoundHtml([round, matches]) {
+  return `
+    <section class="bracket-round">
+      <h4>${escapeHtml(round)}</h4>
+      ${matches
+        .map(
+          (match) => `
+            <article class="bracket-match">
+              <span>${escapeHtml(match.id.replace("M", "Match "))}</span>
+              <strong>${teamHtml(match.winner)}</strong>
+              <p>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</p>
+            </article>
+          `,
+        )
+        .join("")}
+    </section>
+  `;
+}
+
+function groupProjectionHtml([group, table]) {
+  return `
+    <section class="group-projection-card">
+      <h4>${escapeHtml(group)}</h4>
+      ${table
+        .map(
+          (team, index) => `
+            <div class="group-projection-row ${index < 2 ? "qualifies" : index === 2 ? "third-place" : ""}">
+              <span>${index + 1}</span>
+              <strong>${teamHtml(team.team)}</strong>
+              <em>${formatTableNumber(team.points)} pts</em>
+              <small>${formatTableNumber(team.gf)}-${formatTableNumber(team.ga)}</small>
+            </div>
+          `,
+        )
+        .join("")}
+    </section>
+  `;
+}
+
+function formatTableNumber(value) {
+  return Number(value).toFixed(1).replace(/\.0$/, "");
 }
 
 function groupMatchesByDate(matches) {

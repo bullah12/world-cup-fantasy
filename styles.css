@@ -1260,6 +1260,18 @@ th {
   padding: 0.45rem 0.55rem;
 }
 
+.model-picker {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.model-picker select {
+  margin-top: 0.25rem;
+  min-width: 155px;
+  padding: 0.45rem 0.55rem;
+}
+
 .prediction-total-row {
   align-items: center;
   background: #eef2ea;
@@ -1891,7 +1903,7 @@ th {
   border-radius: 8px;
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 0.78fr) minmax(190px, 0.22fr);
   margin-bottom: 1rem;
   padding: 1rem;
 }
@@ -1908,7 +1920,6 @@ th {
   border-radius: 8px;
   display: grid;
   gap: 0.3rem;
-  min-width: 190px;
   padding: 0.85rem;
 }
 
@@ -1958,6 +1969,179 @@ th {
 .stats-list {
   display: grid;
   gap: 0.75rem;
+}
+
+.stats-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.stats-section + .stats-section {
+  margin-top: 1rem;
+}
+
+.tournament-predictor {
+  background: #f8faf6;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.champion-card {
+  align-items: center;
+  background: #fff;
+  border: 1px solid rgba(216, 169, 40, 0.55);
+  border-radius: 8px;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+  padding: 0.8rem;
+}
+
+.champion-card span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.champion-card strong {
+  align-items: center;
+  color: var(--accent-dark);
+  display: flex;
+  gap: 0.35rem;
+}
+
+.bracket-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.bracket-round {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 150px;
+}
+
+.bracket-round h4,
+.group-projection-card h4 {
+  color: var(--accent-dark);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.bracket-match {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.6rem;
+}
+
+.bracket-match > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.bracket-match strong,
+.bracket-match p {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.bracket-match strong {
+  color: var(--accent-dark);
+  font-size: 0.86rem;
+}
+
+.bracket-match p {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.bracket-match .flag,
+.champion-card .flag,
+.group-projection-row .flag {
+  height: 20px;
+  width: 20px;
+}
+
+.group-projection-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.group-projection-card {
+  background: #f8faf6;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+}
+
+.group-projection-row {
+  align-items: center;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  padding: 0.45rem 0.5rem;
+}
+
+.group-projection-row.qualifies {
+  border-color: rgba(20, 149, 98, 0.32);
+}
+
+.group-projection-row.third-place {
+  border-color: rgba(216, 169, 40, 0.42);
+}
+
+.group-projection-row > span {
+  align-items: center;
+  background: #e7ede5;
+  border-radius: 999px;
+  color: var(--accent-dark);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.group-projection-row strong {
+  align-items: center;
+  display: flex;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.group-projection-row .team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-projection-row em,
+.group-projection-row small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 900;
 }
 
 .model-prediction-card {
@@ -2052,8 +2236,13 @@ th {
 @media (max-width: 720px) {
   .stats-hero,
   .stats-grid,
+  .group-projection-grid,
   .model-prediction-card {
     grid-template-columns: 1fr;
+  }
+
+  .bracket-grid {
+    grid-template-columns: repeat(5, 155px);
   }
 
   .stats-spotlight {
