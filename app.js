@@ -1694,7 +1694,10 @@ function normalizeLeagueId(
   return leagues[leagueId] ? leagueId : "";
 }
 
-function normalizeLeagueIds(value, leagues = state?.leagues || DEFAULT_LEAGUES) {
+function normalizeLeagueIds(
+  value,
+  leagues = state?.leagues || DEFAULT_LEAGUES,
+) {
   const values = Array.isArray(value) ? value : [value];
   return [
     ...new Set(
@@ -2079,9 +2082,9 @@ function renderStats() {
         <p class="muted">Model score calls, match win chances, and the fixtures where the numbers have a clear favourite.</p>
       </div>
       <div class="stats-spotlight">
-        <span>Strongest call</span>
+        <span>Strongest call (Dark horse)</span>
         <strong>${strongestFavourite.topOutcome === "Draw" ? "Draw" : teamHtml(strongestFavourite.teamName)}</strong>
-        <p>${strongestFavourite.topProbability}% ${escapeHtml(strongestFavourite.topOutcome)}</p>
+        <p>${strongestFavourite.topProbability}%</p>
       </div>
     </section>
     <div class="stats-grid">
@@ -2159,7 +2162,8 @@ function getModelVersions() {
   return [
     ...BUILT_IN_MODEL_OPTIONS.map((model) => model.id),
     ...storedVersions.filter(
-      (version) => !BUILT_IN_MODEL_OPTIONS.some((model) => model.id === version),
+      (version) =>
+        !BUILT_IN_MODEL_OPTIONS.some((model) => model.id === version),
     ),
   ];
 }
@@ -2172,11 +2176,15 @@ function getActiveModelPredictions() {
   );
 
   if (version === "favourite-lean") {
-    return predictions.map((prediction) => adjustPredictionConfidence(prediction, 1.16));
+    return predictions.map((prediction) =>
+      adjustPredictionConfidence(prediction, 1.16),
+    );
   }
 
   if (version === "upset-lean") {
-    return predictions.map((prediction) => adjustPredictionConfidence(prediction, 0.86));
+    return predictions.map((prediction) =>
+      adjustPredictionConfidence(prediction, 0.86),
+    );
   }
 
   return predictions;
@@ -2303,7 +2311,9 @@ function buildTournamentPrediction(predictions) {
     .slice(0, 8);
   const matchWinners = {};
   const usedThirdPlaceTeams = new Set();
-  const knockoutMatches = MATCHES.filter((match) => !/^Group [A-L]$/.test(match.group));
+  const knockoutMatches = MATCHES.filter(
+    (match) => !/^Group [A-L]$/.test(match.group),
+  );
   const bracket = [];
 
   knockoutMatches.forEach((match) => {
@@ -2345,45 +2355,47 @@ function buildTournamentPrediction(predictions) {
 
 function buildPredictedGroups(predictionByMatch) {
   const groupMap = new Map();
-  MATCHES.filter((match) => /^Group [A-L]$/.test(match.group)).forEach((match) => {
-    if (!groupMap.has(match.group)) groupMap.set(match.group, new Map());
-    const table = groupMap.get(match.group);
-    [match.home, match.away].forEach((team) => {
-      if (!table.has(team)) {
-        table.set(team, {
-          team,
-          played: 0,
-          points: 0,
-          gf: 0,
-          ga: 0,
-          gd: 0,
-          modelScore: 0,
-        });
-      }
-    });
+  MATCHES.filter((match) => /^Group [A-L]$/.test(match.group)).forEach(
+    (match) => {
+      if (!groupMap.has(match.group)) groupMap.set(match.group, new Map());
+      const table = groupMap.get(match.group);
+      [match.home, match.away].forEach((team) => {
+        if (!table.has(team)) {
+          table.set(team, {
+            team,
+            played: 0,
+            points: 0,
+            gf: 0,
+            ga: 0,
+            gd: 0,
+            modelScore: 0,
+          });
+        }
+      });
 
-    const prediction = predictionByMatch.get(match.id);
-    if (!prediction) return;
+      const prediction = predictionByMatch.get(match.id);
+      if (!prediction) return;
 
-    const home = table.get(match.home);
-    const away = table.get(match.away);
-    const homeGoals = Number(prediction.predicted_home_goals) || 0;
-    const awayGoals = Number(prediction.predicted_away_goals) || 0;
-    const homeWinProb = Number(prediction.home_win_prob) || 0;
-    const drawProb = Number(prediction.draw_prob) || 0;
-    const awayWinProb = Number(prediction.away_win_prob) || 0;
+      const home = table.get(match.home);
+      const away = table.get(match.away);
+      const homeGoals = Number(prediction.predicted_home_goals) || 0;
+      const awayGoals = Number(prediction.predicted_away_goals) || 0;
+      const homeWinProb = Number(prediction.home_win_prob) || 0;
+      const drawProb = Number(prediction.draw_prob) || 0;
+      const awayWinProb = Number(prediction.away_win_prob) || 0;
 
-    home.played += 1;
-    away.played += 1;
-    home.gf += homeGoals;
-    home.ga += awayGoals;
-    away.gf += awayGoals;
-    away.ga += homeGoals;
-    home.points += (homeWinProb * 3 + drawProb) / 100;
-    away.points += (awayWinProb * 3 + drawProb) / 100;
-    home.modelScore += homeWinProb + drawProb / 2;
-    away.modelScore += awayWinProb + drawProb / 2;
-  });
+      home.played += 1;
+      away.played += 1;
+      home.gf += homeGoals;
+      home.ga += awayGoals;
+      away.gf += awayGoals;
+      away.ga += homeGoals;
+      home.points += (homeWinProb * 3 + drawProb) / 100;
+      away.points += (awayWinProb * 3 + drawProb) / 100;
+      home.modelScore += homeWinProb + drawProb / 2;
+      away.modelScore += awayWinProb + drawProb / 2;
+    },
+  );
 
   return [...groupMap.entries()]
     .map(([group, table]) => [
@@ -2435,15 +2447,18 @@ function resolveKnockoutSlot(
 
   const thirdSlot = slot.match(/^Group ([A-L/]+) 3rd Place$/);
   if (thirdSlot) {
-    const allowedGroups = thirdSlot[1].split("/").map((group) => `Group ${group}`);
-    const thirdTeam = thirdPlaceTeams.find(
-      (team) =>
-        allowedGroups.includes(team.group) && !usedThirdPlaceTeams.has(team.team),
-    );
-    if (thirdTeam) {
-      usedThirdPlaceTeams.add(thirdTeam.team);
-      return thirdTeam.team;
-    }
+    const allowedGroups = thirdSlot[1]
+      .split("/")
+      .map((group) => `Group ${group}`);
+    const thirdTeam =
+      thirdPlaceTeams.find(
+        (team) =>
+          allowedGroups.includes(team.group) &&
+          !usedThirdPlaceTeams.has(team.team),
+      ) || thirdPlaceTeams.find((team) => !usedThirdPlaceTeams.has(team.team));
+    if (!thirdTeam) return slot;
+    usedThirdPlaceTeams.add(thirdTeam.team);
+    return thirdTeam.team;
   }
 
   return slot;
@@ -2458,7 +2473,10 @@ function predictKnockoutMatch(home, away, groups) {
   const awayPower = teamTournamentPower(away, groups);
   const winner = homePower >= awayPower ? home : away;
   const loser = winner === home ? away : home;
-  const confidence = Math.min(82, Math.max(52, Math.round(55 + Math.abs(homePower - awayPower) * 4)));
+  const confidence = Math.min(
+    82,
+    Math.max(52, Math.round(55 + Math.abs(homePower - awayPower) * 4)),
+  );
 
   return {
     winner,
@@ -2470,7 +2488,8 @@ function predictKnockoutMatch(home, away, groups) {
 function teamTournamentPower(teamName, groups) {
   for (const [, table] of groups) {
     const team = table.find((row) => row.team === teamName);
-    if (team) return team.points * 3 + team.gd * 1.5 + team.gf + team.modelScore / 30;
+    if (team)
+      return team.points * 3 + team.gd * 1.5 + team.gf + team.modelScore / 30;
   }
 
   return 0;
@@ -2525,8 +2544,8 @@ function bracketRoundHtml([round, matches]) {
           (match) => `
             <article class="bracket-match">
               <span>${escapeHtml(match.id.replace("M", "Match "))}</span>
-              <strong>${teamHtml(match.winner)}</strong>
-              <p>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</p>
+              <strong class="bracket-winner">${teamFlagHtml(match.winner, { className: "winner-flag", title: true })}</strong>
+              <p>${teamFlagHtml(match.home, { title: true })}<span>vs</span>${teamFlagHtml(match.away, { title: true })}</p>
             </article>
           `,
         )
@@ -2544,7 +2563,7 @@ function groupProjectionHtml([group, table]) {
           (team, index) => `
             <div class="group-projection-row ${index < 2 ? "qualifies" : index === 2 ? "third-place" : ""}">
               <span>${index + 1}</span>
-              <strong>${teamHtml(team.team)}</strong>
+              <strong>${teamHtml(team.team, { title: true })}</strong>
               <em>${formatTableNumber(team.points)} pts</em>
               <small>${formatTableNumber(team.gf)}-${formatTableNumber(team.ga)}</small>
             </div>
@@ -3434,17 +3453,26 @@ function teamHtml(team, options = {}) {
   return `${teamFlagHtml(team)}${name}`;
 }
 
-function teamFlagHtml(team) {
+function teamFlagHtml(team, options = {}) {
   const flagCode = TEAM_FLAG_CODES[team];
-  if (!flagCode) return "";
+  const classes = ["flag", options.className].filter(Boolean).join(" ");
+  const title = options.title ? ` title="${escapeHtml(team)}"` : "";
   const fallback = team
     .split(/\s+/)
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  if (!flagCode) {
+    return `
+      <span class="${escapeHtml(classes)} flag-missing" aria-hidden="true"${title}>
+        <span class="flag-fallback">${escapeHtml(fallback)}</span>
+      </span>
+    `;
+  }
+
   return `
-    <span class="flag" aria-hidden="true">
+    <span class="${escapeHtml(classes)}" aria-hidden="true"${title}>
       <img src="https://flagcdn.com/${flagCode}.svg" alt="" loading="lazy" onerror="this.closest('.flag').classList.add('flag-missing'); this.remove();" />
       <span class="flag-fallback">${escapeHtml(fallback)}</span>
     </span>
