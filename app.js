@@ -288,6 +288,23 @@ els.saveConfig.addEventListener("click", async () => {
   render();
 });
 
+document.addEventListener("click", (event) => {
+  const tooltipButton = event.target.closest(".form-dot, .prediction-status");
+  if (event.target.closest(".status-tooltip")) return;
+
+  document.querySelectorAll(".tooltip-open").forEach((button) => {
+    if (button === tooltipButton) return;
+    button.classList.remove("tooltip-open");
+    button.setAttribute("aria-expanded", "false");
+  });
+
+  if (!tooltipButton || !tooltipButton.querySelector(".status-tooltip")) return;
+
+  event.preventDefault();
+  tooltipButton.classList.toggle("tooltip-open");
+  tooltipButton.setAttribute("aria-expanded", String(tooltipButton.classList.contains("tooltip-open")));
+});
+
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return normalizeState({});
@@ -1004,7 +1021,7 @@ function formDotHtml(item) {
   const tooltip = leaderboardBreakdownHtml(item.match, item.result, item.score);
   const label = `${item.match.home} ${item.result.homeScore}-${item.result.awayScore} ${item.match.away}. Total ${item.score.points} points.`;
   return `
-    <button class="form-dot ${status.className}" type="button" aria-label="${escapeHtml(label)}">
+    <button class="form-dot ${status.className}" type="button" aria-label="${escapeHtml(label)}" aria-expanded="false">
       <span class="status-tooltip">${tooltip}</span>
     </button>
   `;
@@ -1053,7 +1070,7 @@ function renderPlayerPredictions() {
             </strong>
             <span>${escapeHtml(match.group)}</span>
           </div>
-          <button class="prediction-status ${status.className}" type="button" aria-label="${escapeHtml(detailsLabel)}">
+          <button class="prediction-status ${status.className}" type="button" aria-label="${escapeHtml(detailsLabel)}" aria-expanded="false">
             <span>${status.pointsText}</span>
             <span class="status-tooltip">${details}</span>
           </button>

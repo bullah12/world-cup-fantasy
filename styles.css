@@ -921,7 +921,8 @@ th {
 
 .form-dot:hover .status-tooltip,
 .form-dot:focus .status-tooltip,
-.form-dot:focus-visible .status-tooltip {
+.form-dot:focus-visible .status-tooltip,
+.form-dot.tooltip-open .status-tooltip {
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
@@ -1142,7 +1143,8 @@ th {
 
 .prediction-status:hover .status-tooltip,
 .prediction-status:focus .status-tooltip,
-.prediction-status:focus-visible .status-tooltip {
+.prediction-status:focus-visible .status-tooltip,
+.prediction-status.tooltip-open .status-tooltip {
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
@@ -1219,13 +1221,36 @@ th {
     flex-wrap: wrap;
   }
 
+  .brand,
+  .nav-tabs,
+  .nav-player {
+    flex: 1 0 100%;
+  }
+
+  .brand {
+    justify-content: center;
+    text-align: center;
+  }
+
   .nav-tabs {
+    margin-left: 0;
     order: 2;
+    width: 100%;
+  }
+
+  .nav-tab {
+    flex: 1 1 0;
   }
 
   .nav-player {
-    flex: 0 0 auto;
     order: 3;
+  }
+
+  .player-nav-button,
+  .player-nav-button.has-player {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
   }
 }
 
@@ -1233,6 +1258,60 @@ th {
   main,
   .hero {
     padding: 1rem;
+  }
+
+  .hero {
+    min-height: auto;
+  }
+
+  nav {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr;
+  }
+
+  .brand {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .nav-tabs {
+    justify-self: stretch;
+    margin-left: 0;
+    order: 0;
+    width: 100%;
+  }
+
+  .nav-tab {
+    flex: 1 1 0;
+  }
+
+  .nav-player {
+    order: 0;
+    width: 100%;
+  }
+
+  .player-nav-button,
+  .player-nav-button.has-player {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .hero-grid {
+    min-height: 260px;
+    padding-top: 2rem;
+  }
+
+  h1 {
+    font-size: 2.45rem;
+  }
+
+  .section-head,
+  .section-head.small,
+  .prediction-panel-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .prediction-form,
@@ -1305,16 +1384,144 @@ th {
     flex-wrap: wrap;
   }
 
+  .table-wrap {
+    overflow: visible;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+  }
+
+  thead {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  table {
+    border-spacing: 0;
+  }
+
+  .leaderboard-row {
+    background: #f8faf6;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+    padding: 0.85rem;
+    position: relative;
+  }
+
+  .leaderboard-row:hover td {
+    background: transparent;
+  }
+
+  .leaderboard-row td {
+    background: transparent;
+    border: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .leaderboard-row td:first-child,
+  .leaderboard-row td:last-child {
+    border: 0;
+    border-radius: 0;
+  }
+
+  .leaderboard-row td:nth-child(1) {
+    position: absolute;
+    right: 0.85rem;
+    top: 0.85rem;
+  }
+
+  .leaderboard-row td:nth-child(2) {
+    display: block;
+    padding-right: 3rem;
+  }
+
+  .leaderboard-row td:nth-child(3)::before {
+    color: var(--muted);
+    content: "Points";
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .leaderboard-row td:nth-child(4)::before {
+    color: var(--muted);
+    content: "Correct";
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .leaderboard-row td:nth-child(5) {
+    align-items: flex-start;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .leaderboard-row td:nth-child(5)::before {
+    color: var(--muted);
+    content: "Recent form";
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .leaderboard-name {
+    font-size: 1.05rem;
+  }
+
+  .leaderboard-id {
+    font-size: 0.82rem;
+  }
+
+  .form-strip {
+    gap: 0.45rem;
+  }
+
+  .form-dot {
+    height: 30px;
+    width: 30px;
+  }
+
   .status-tooltip {
-    bottom: auto;
-    max-width: min(280px, 76vw);
-    min-width: min(240px, 76vw);
-    right: 0;
-    top: calc(100% + 0.55rem);
+    bottom: 1rem;
+    left: 1rem;
+    max-height: min(70vh, 420px);
+    max-width: none;
+    min-width: 0;
+    overflow: auto;
+    pointer-events: auto;
+    position: fixed;
+    right: 1rem;
+    top: auto;
+    width: auto;
+    z-index: 30;
+  }
+
+  .status-tooltip > span {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .form-dot .status-tooltip {
-    right: -0.4rem;
-    top: calc(100% + 0.45rem);
+    bottom: 1rem;
+    right: 1rem;
+    top: auto;
   }
 }
