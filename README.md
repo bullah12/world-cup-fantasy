@@ -38,25 +38,15 @@ The app is deliberately parameterised in `app.js`.
 - `MATCHES` controls fixtures, kick-off times, venues, and labels.
 - `TEAM_FLAG_CODES` maps team names to real SVG flags from `flagcdn.com`.
 
-Kick-off values use ISO strings with timezone offsets, for example:
+Kick-off values use ISO strings with timezone offsets. The current schedule uses Eastern Time (`-04:00`) from the Kaggle dataset's `time_et` column, for example:
 
 ```js
-kickoff: "2026-06-11T13:00:00-06:00"
+kickoff: "2026-06-11T15:00:00-04:00"
 ```
 
-## Fixture Sources Checked
+## Fixture Source
 
-The seeded fixtures use a small editable starter set based on public schedule checks made on 8 June 2026:
+The seeded fixtures use the full 104-match CSV schedule downloaded with `kagglehub` on 8 June 2026:
 
-- FIFA says the tournament begins on 11 June 2026 and ends with the final on 19 July 2026.
-- FIFA confirmed Mexico vs South Africa as the opening match in Mexico City.
-- Recent fixture coverage lists England in Group L with Croatia, Ghana, and Panama.
-
-For production use, replace or expand `MATCHES` from FIFA's official schedule page.
-
-Useful source links:
-
-- FIFA schedule page: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums
-- FIFA opening ceremony release: https://inside.fifa.com/organisation/media-releases/world-cup-2026-opening-ceremony-mexico-city
-- FIFA updated schedule release: https://vod.fifa.com/media-releases/updated-world-cup-2026-match-schedule-venues-kick-off-times-104-matches
-- Sky Sports Group L guide: https://www.skysports.com/football/news/12098/13543108/world-cup-2026-group-l-guide-fixtures-schedule-standings-and-odds-for-england-croatia-ghana-and-panama
+- Kaggle dataset: `mjmotebaheri/world-cup-2026-match-schedule-data-csv-json-ics`
+- CSV file: `world-cup-2026-schedule.csv`
