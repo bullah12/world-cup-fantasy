@@ -941,6 +941,7 @@ const els = {
   scoringConfig: document.querySelector("#scoring-config"),
   saveConfig: document.querySelector("#save-config"),
   viewControls: document.querySelectorAll("[data-view-target]"),
+  siteFooter: document.querySelector(".site-footer"),
   adminLogin: document.querySelector("#admin-login"),
   adminContent: document.querySelector("#admin-content"),
   adminLoginForm: document.querySelector("#admin-login-form"),
@@ -1459,6 +1460,7 @@ function showView(viewId) {
   els.viewControls.forEach((control) => {
     control.classList.toggle("active", control.dataset.viewTarget === viewId);
   });
+  els.siteFooter.hidden = viewId !== "main-view";
 }
 
 function renderAdminAccess() {

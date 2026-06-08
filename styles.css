@@ -1338,7 +1338,11 @@ th {
   margin: 0 auto;
   max-width: 1220px;
   padding: 0 1.4rem 1.4rem;
-  text-align: center;
+  text-align: right;
+}
+
+.site-footer[hidden] {
+  display: none;
 }
 
 .admin-footer-button {
