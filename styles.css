@@ -3134,6 +3134,23 @@ td {
     margin-top: 0.25rem;
   }
 
+  .modal-backdrop {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    z-index: 40;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 2rem - env(safe-area-inset-bottom));
+  }
+
+  .modal-login-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-login-row button {
+    width: 100%;
+  }
+
   .player-nav-button,
   .player-nav-button.has-player {
     background: rgba(255, 250, 240, 0.9);
