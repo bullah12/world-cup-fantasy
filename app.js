@@ -2030,7 +2030,7 @@ function renderSummary() {
   els.activeSummary.textContent = player
     ? `Predicting as ${player.name} (${player.id})${leagues ? ` in ${leagues}` : " with worldwide ranking only"}.`
     : "Create or select your player, then predict each score before the one-hour lockout.";
-  els.playerNavLabel.textContent = player ? "" : "Create player";
+  els.playerNavLabel.textContent = player ? "Switch player" : "Log in / create player";
   els.activePlayerName.textContent = player ? player.name : "";
   els.playerNavButton.classList.toggle("has-player", Boolean(player));
 }

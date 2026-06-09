@@ -3068,6 +3068,50 @@ td {
   .layout {
     gap: 1rem;
   }
+
+  nav {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .brand {
+    order: 0;
+  }
+
+  .nav-player {
+    display: block;
+    flex-basis: 100%;
+    margin-top: 0.25rem;
+    order: 1;
+    width: 100%;
+  }
+
+  .player-nav-button,
+  .player-nav-button.has-player {
+    background: rgba(255, 250, 240, 0.94);
+    border: 1px solid rgba(234, 215, 184, 0.82);
+    box-shadow: 0 10px 22px rgba(72, 44, 21, 0.12);
+    color: var(--accent-dark);
+    display: grid;
+    justify-content: center;
+    min-height: 46px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .player-nav-button span,
+  .player-nav-button:not(.has-player) span,
+  .player-nav-button.has-player strong {
+    color: var(--accent-dark);
+  }
+
+  .player-nav-button.has-player span {
+    color: var(--muted);
+  }
+
+  .nav-tabs {
+    order: 2;
+  }
 }
 
 @media (max-width: 620px) {
