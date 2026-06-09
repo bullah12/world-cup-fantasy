@@ -2568,3 +2568,767 @@ th {
     margin-top: 0;
   }
 }
+
+/* Fixture Festival theme */
+:root {
+  --bg: #fff4df;
+  --ink: #1f241b;
+  --muted: #766b5a;
+  --panel: #fffaf0;
+  --line: #ead7b8;
+  --accent: #0d7a55;
+  --accent-dark: #074a38;
+  --gold: #f2b84b;
+  --danger: #c8453d;
+  --festival-red: #d23b35;
+  --festival-blue: #153b6d;
+  --festival-cream: #fff8e8;
+  --festival-grass: #0f8a5f;
+  --shadow: 0 18px 42px rgba(72, 44, 21, 0.14);
+}
+
+body {
+  background:
+    radial-gradient(circle at 14% 12%, rgba(210, 59, 53, 0.13), transparent 28%),
+    radial-gradient(circle at 88% 4%, rgba(21, 59, 109, 0.14), transparent 26%),
+    linear-gradient(135deg, rgba(15, 138, 95, 0.06) 25%, transparent 25%) 0 0 / 30px 30px,
+    var(--bg);
+}
+
+body::before {
+  background:
+    linear-gradient(90deg, transparent 0 46%, rgba(15, 138, 95, 0.08) 46% 54%, transparent 54%),
+    linear-gradient(transparent 0 47%, rgba(15, 138, 95, 0.07) 47% 53%, transparent 53%);
+  content: "";
+  inset: 0;
+  opacity: 0.45;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+button {
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(13, 122, 85, 0.16);
+}
+
+button.secondary {
+  background: #fff3d8;
+  border: 1px solid var(--line);
+  color: var(--festival-blue);
+  box-shadow: none;
+}
+
+input,
+select {
+  background: #fffef8;
+  border-color: #e4c89f;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.22);
+  outline: 0;
+}
+
+.hero {
+  background:
+    linear-gradient(180deg, rgba(18, 30, 24, 0.18), rgba(18, 30, 24, 0.7)),
+    radial-gradient(circle at 22% 16%, rgba(242, 184, 75, 0.48), transparent 24%),
+    linear-gradient(110deg, rgba(210, 59, 53, 0.5), rgba(13, 122, 85, 0.38), rgba(21, 59, 109, 0.46)),
+    url("assets/world-cup-hero-treated.png");
+  background-position: center;
+  background-size: cover;
+  border-bottom: 6px solid var(--gold);
+  min-height: 390px;
+  position: relative;
+}
+
+.hero::after {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 18px),
+    linear-gradient(90deg, var(--festival-red), var(--accent), var(--festival-blue));
+  bottom: 0;
+  content: "";
+  height: 8px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+nav {
+  background: rgba(255, 250, 240, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  padding: 0.55rem;
+}
+
+.brand {
+  letter-spacing: 0.01em;
+}
+
+.brand-mark {
+  background:
+    linear-gradient(135deg, var(--festival-red), var(--gold));
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(80, 37, 18, 0.2);
+  color: #fff;
+}
+
+.nav-tabs,
+.leaderboard-scope-tabs,
+.team-view-tabs,
+.admin-section-tabs {
+  background: rgba(255, 243, 216, 0.92);
+  border: 1px solid rgba(234, 215, 184, 0.85);
+  border-radius: 999px;
+}
+
+.nav-tab,
+.leaderboard-scope-tab,
+.team-view-tab,
+.admin-section-tab {
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 0.86rem;
+}
+
+.nav-tab:hover,
+.nav-tab.active,
+.leaderboard-scope-tab:hover,
+.leaderboard-scope-tab.active,
+.team-view-tab:hover,
+.team-view-tab.active,
+.admin-section-tab:hover,
+.admin-section-tab.active {
+  background: linear-gradient(135deg, var(--festival-red), var(--accent));
+  color: #fff;
+}
+
+.player-nav-button,
+.player-nav-button.has-player {
+  border-radius: 999px;
+}
+
+.player-nav-button:not(.has-player) {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+}
+
+.player-nav-button.has-player {
+  background: rgba(255, 248, 232, 0.92);
+  color: var(--accent-dark);
+}
+
+.player-nav-button.has-player strong {
+  color: var(--accent-dark);
+}
+
+.hero-grid {
+  min-height: 300px;
+}
+
+h1 {
+  max-width: 680px;
+  text-shadow: 0 7px 24px rgba(0, 0, 0, 0.24);
+}
+
+.intro {
+  max-width: 600px;
+}
+
+.hero-points span,
+.prediction-cue,
+.pill {
+  background: #fff1cf;
+  border: 1px solid rgba(242, 184, 75, 0.65);
+  color: #7a3b13;
+}
+
+.hero-points span {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+main {
+  margin-top: -2.7rem;
+  position: relative;
+  z-index: 1;
+}
+
+.panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 248, 232, 0.96)),
+    var(--panel);
+  border-color: rgba(222, 192, 145, 0.86);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.section-head {
+  background: rgba(255, 250, 240, 0.78);
+  border: 1px solid rgba(234, 215, 184, 0.78);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.eyebrow {
+  color: var(--festival-red);
+  letter-spacing: 0.11em;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.next-matches {
+  background:
+    linear-gradient(135deg, rgba(210, 59, 53, 0.08), transparent 36%),
+    linear-gradient(315deg, rgba(21, 59, 109, 0.08), transparent 32%),
+    var(--festival-cream);
+}
+
+.match-countdown {
+  background:
+    linear-gradient(135deg, rgba(21, 59, 109, 0.08), rgba(242, 184, 75, 0.16)),
+    #fff5dc;
+  border: 1px solid rgba(242, 184, 75, 0.55);
+  border-radius: 16px;
+}
+
+.countdown-value {
+  background:
+    linear-gradient(#fffdf7 0 49%, #fff5dc 50% 100%);
+  border-color: #d9b878;
+  border-radius: 10px;
+  color: var(--festival-blue);
+}
+
+.countdown-label {
+  color: #8b6a32;
+}
+
+.next-matches-head {
+  background: #fffaf0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.8rem;
+}
+
+.next-match-chip {
+  background: #fffaf0;
+  border: 1px dashed rgba(210, 59, 53, 0.42);
+  border-radius: 16px;
+  box-shadow: none;
+  overflow: hidden;
+  position: relative;
+}
+
+.next-match-chip::before,
+.match-row::before,
+.all-match-card::before {
+  background: var(--gold);
+  border-radius: 999px;
+  content: "";
+  height: 8px;
+  left: -4px;
+  position: absolute;
+  top: calc(50% - 4px);
+  width: 8px;
+}
+
+.next-match-chip:hover {
+  background: #fff3d8;
+}
+
+.prediction-cue {
+  align-items: center;
+  background: linear-gradient(135deg, var(--festival-red), var(--gold));
+  border: 0;
+  box-shadow: 0 10px 20px rgba(210, 59, 53, 0.18);
+  color: #fff;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  margin: 0 auto -0.35rem;
+  min-height: 36px;
+  padding: 0.45rem 0.9rem;
+}
+
+.match-day-tabs {
+  background: rgba(255, 250, 240, 0.82);
+  border: 1px solid rgba(234, 215, 184, 0.8);
+  border-radius: 999px;
+  justify-self: center;
+  padding: 0.35rem;
+  width: fit-content;
+}
+
+.day-tab,
+.day-step {
+  background: transparent;
+  color: var(--festival-blue);
+  box-shadow: none;
+}
+
+.day-tab {
+  border-radius: 999px;
+  min-width: 210px;
+}
+
+.day-tab.active,
+.day-step:hover {
+  background: linear-gradient(135deg, var(--accent), var(--festival-blue));
+  color: #fff;
+}
+
+.calendar-step {
+  background: #fff1cf;
+}
+
+.match-day {
+  border-radius: 18px;
+}
+
+.match-day-head {
+  background:
+    linear-gradient(90deg, rgba(13, 122, 85, 0.13), rgba(242, 184, 75, 0.2)),
+    #fff6df;
+  border-bottom: 1px solid var(--line);
+}
+
+.match-row {
+  background: #fffaf0;
+  border: 1px solid rgba(234, 215, 184, 0.7);
+  border-radius: 16px;
+  margin-top: 0.55rem;
+  overflow: hidden;
+  padding: 0.9rem 0.75rem;
+}
+
+.match-row:last-child {
+  border-bottom: 1px solid rgba(234, 215, 184, 0.7);
+}
+
+.match-row:hover,
+.locked {
+  background: #fff3d8;
+}
+
+.match-time,
+.all-match-time {
+  align-items: center;
+  background: var(--festival-blue);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  justify-content: center;
+  padding: 0.35rem 0.55rem;
+}
+
+.prediction-form input {
+  background: #fff;
+  border: 2px solid #e3c58f;
+  border-radius: 12px;
+  color: var(--festival-blue);
+  font-size: 1rem;
+}
+
+.prediction-form input:focus {
+  border-color: var(--festival-red);
+}
+
+.team {
+  color: #242719;
+}
+
+.flag {
+  border-color: #e6cfa8;
+  box-shadow: 0 4px 10px rgba(77, 46, 18, 0.12);
+}
+
+.points-rule,
+.prediction-item,
+.admin-row,
+.user-admin-row,
+.team-group-card,
+.team-card,
+.stat-card,
+.model-prediction-card,
+.bracket-match,
+.group-projection-card,
+.group-projection-row,
+.join-league-panel,
+.admin-league-row,
+.all-match-filters {
+  background: #fffaf0;
+  border-color: rgba(234, 215, 184, 0.82);
+  border-radius: 16px;
+}
+
+.points-rule-value,
+.prediction-total-row {
+  background: #fff1cf;
+}
+
+.points-total,
+.rank-badge,
+.model-score {
+  background: linear-gradient(135deg, var(--accent), var(--festival-blue));
+}
+
+td {
+  background: #fffaf0;
+}
+
+.leaderboard-row:hover td {
+  background: #fff3d8;
+}
+
+.leaderboard-points,
+.leaderboard-league,
+.prediction-score,
+.stat-card strong,
+.stats-spotlight strong,
+.model-pick strong,
+.champion-card strong,
+.team-view-tab {
+  color: var(--accent-dark);
+}
+
+.team-card {
+  box-shadow: 0 10px 20px rgba(72, 44, 21, 0.06);
+}
+
+.team-card:nth-child(3n + 1) {
+  border-left: 4px solid var(--festival-red);
+}
+
+.team-card:nth-child(3n + 2) {
+  border-left: 4px solid var(--accent);
+}
+
+.team-card:nth-child(3n) {
+  border-left: 4px solid var(--festival-blue);
+}
+
+.all-match-card {
+  background: #fffaf0;
+  border: 1px solid rgba(234, 215, 184, 0.7);
+  border-radius: 16px;
+  margin-top: 0.55rem;
+  overflow: hidden;
+  padding: 0.85rem 0.75rem;
+  position: relative;
+}
+
+.all-match-card:last-child {
+  border-bottom: 1px solid rgba(234, 215, 184, 0.7);
+}
+
+.stats-hero,
+.tournament-predictor {
+  background:
+    linear-gradient(135deg, rgba(21, 59, 109, 0.08), rgba(242, 184, 75, 0.16)),
+    #fffaf0;
+  border-color: rgba(234, 215, 184, 0.85);
+  border-radius: 18px;
+}
+
+.stats-spotlight,
+.champion-card,
+.model-pick {
+  background: #fffef8;
+  border-color: rgba(234, 215, 184, 0.85);
+  border-radius: 16px;
+}
+
+.status-tooltip,
+.mobile-tooltip,
+.league-tooltip {
+  background: #241b14;
+  border: 1px solid rgba(242, 184, 75, 0.28);
+}
+
+.site-footer {
+  padding-bottom: 2rem;
+}
+
+.admin-footer-button {
+  background: #fffaf0;
+  border-color: rgba(234, 215, 184, 0.86);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 920px) {
+  main {
+    margin-top: -1.4rem;
+  }
+
+  .layout {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 620px) {
+  body {
+    padding-bottom: 76px;
+  }
+
+  main {
+    padding: 0.85rem;
+  }
+
+  .hero {
+    border-bottom-width: 5px;
+    min-height: 360px;
+    padding: 0.85rem;
+  }
+
+  nav {
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+
+  .brand {
+    justify-content: flex-start;
+  }
+
+  .brand-mark {
+    height: 38px;
+  }
+
+  .nav-tabs {
+    background: rgba(255, 250, 240, 0.96);
+    border-radius: 18px 18px 0 0;
+    bottom: 0;
+    box-shadow: 0 -12px 28px rgba(72, 44, 21, 0.18);
+    display: grid;
+    gap: 0.2rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    left: 0;
+    padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom));
+    position: fixed;
+    right: 0;
+    z-index: 18;
+  }
+
+  .nav-tab {
+    color: var(--festival-blue);
+    font-size: 0.72rem;
+    padding: 0.6rem 0.3rem;
+  }
+
+  .nav-tab::before {
+    background: linear-gradient(135deg, var(--festival-red), var(--gold));
+    border-radius: 999px;
+    content: "";
+    display: block;
+    height: 5px;
+    margin: 0 auto 0.28rem;
+    width: 18px;
+  }
+
+  .nav-player {
+    margin-top: 0.25rem;
+  }
+
+  .player-nav-button,
+  .player-nav-button.has-player {
+    background: rgba(255, 250, 240, 0.9);
+    border: 1px solid rgba(234, 215, 184, 0.75);
+    color: var(--accent-dark);
+  }
+
+  .player-nav-button:not(.has-player) span,
+  .player-nav-button.has-player strong {
+    color: var(--accent-dark);
+  }
+
+  .hero-grid {
+    min-height: 230px;
+    padding-top: 1.6rem;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  .intro {
+    font-size: 0.98rem;
+  }
+
+  .hero-points {
+    gap: 0.4rem;
+  }
+
+  .hero-points span {
+    font-size: 0.76rem;
+    padding: 0.45rem 0.58rem;
+  }
+
+  .section-head,
+  .section-head.small {
+    padding: 0.85rem;
+  }
+
+  .panel {
+    border-radius: 18px;
+    padding: 0.85rem;
+  }
+
+  .match-countdown,
+  .next-matches-head {
+    padding: 0.75rem;
+  }
+
+  .countdown-value {
+    font-size: 1.45rem;
+    padding: 0.45rem 0.15rem;
+  }
+
+  .countdown-label {
+    font-size: 0.62rem;
+  }
+
+  .prediction-cue {
+    margin-bottom: -0.2rem;
+    width: 100%;
+  }
+
+  .match-day-tabs {
+    display: grid;
+    gap: 0.3rem;
+    grid-template-columns: 40px minmax(0, 1fr) 40px 40px;
+    width: 100%;
+  }
+
+  .day-tab {
+    min-width: 0;
+    padding: 0.55rem 0.5rem;
+  }
+
+  .day-step {
+    border-radius: 999px;
+    height: 40px;
+    width: 40px;
+  }
+
+  .match-day-head {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .match-day-list {
+    padding: 0 0.35rem 0.35rem;
+  }
+
+  .match-row {
+    gap: 0.65rem;
+    grid-template-columns: 1fr;
+    padding: 0.8rem 0.65rem;
+  }
+
+  .match-time {
+    justify-self: start;
+  }
+
+  .prediction-form {
+    align-items: center;
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: minmax(0, 1fr) 54px 54px minmax(0, 1fr);
+  }
+
+  .prediction-form .home-label {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+
+  .prediction-form .score-input:nth-of-type(1) {
+    grid-column: 2;
+  }
+
+  .prediction-form .score-input:nth-of-type(2) {
+    grid-column: 3;
+  }
+
+  .prediction-form .away-label {
+    grid-column: 4;
+  }
+
+  .prediction-form input {
+    min-height: 42px;
+  }
+
+  .team {
+    font-size: 0.86rem;
+    gap: 0.32rem;
+  }
+
+  .flag {
+    height: 20px;
+    width: 20px;
+  }
+
+  .match-extra {
+    border-top: 1px dashed var(--line);
+    max-height: none;
+    opacity: 1;
+    padding-top: 0.55rem;
+  }
+
+  .points-rule,
+  .prediction-item,
+  .team-card,
+  .all-match-card,
+  .model-prediction-card {
+    border-radius: 14px;
+  }
+
+  .points-breakdown {
+    order: 2;
+  }
+
+  .side-stack {
+    gap: 0.85rem;
+  }
+
+  .leaderboard-controls,
+  .team-subview-row {
+    gap: 0.55rem;
+  }
+
+  .leaderboard-scope-tabs,
+  .team-view-tabs,
+  .admin-section-tabs {
+    border-radius: 16px;
+  }
+
+  .leaderboard-row {
+    background: #fffaf0;
+    border-color: rgba(234, 215, 184, 0.82);
+    border-radius: 16px;
+  }
+
+  .rank-badge {
+    background: linear-gradient(135deg, var(--festival-red), var(--gold));
+  }
+
+  .all-match-card {
+    gap: 0.55rem;
+  }
+
+  .all-match-time {
+    justify-self: start;
+  }
+
+  .stats-hero {
+    padding: 0.85rem;
+  }
+
+  .site-footer {
+    padding-bottom: 5.8rem;
+  }
+}
