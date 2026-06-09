@@ -932,6 +932,8 @@ let selectedTeamView = "groups";
 let leaderboardScope = DEFAULT_LEAGUE_ID;
 let selectedModelVersion = "";
 let selectedAdminSection = "results";
+let allMatchesTeamFilter = "";
+let allMatchesGroupFilter = "";
 
 let modelPredictions = [];
 const recentPredictionHistoryWrites = new Map();
@@ -1061,6 +1063,18 @@ els.teamViewTabs.forEach((tab) => {
     selectedTeamView = tab.dataset.teamView;
     renderTeams();
   });
+});
+
+els.teamsContent.addEventListener("change", (event) => {
+  if (event.target.matches("[data-all-matches-team-filter]")) {
+    allMatchesTeamFilter = event.target.value;
+    renderTeams();
+  }
+
+  if (event.target.matches("[data-all-matches-group-filter]")) {
+    allMatchesGroupFilter = event.target.value;
+    renderTeams();
+  }
 });
 
 els.adminSectionTabs.forEach((tab) => {
@@ -2041,7 +2055,7 @@ function renderMatches() {
   }
   selectedMatchDateKey = clampDateKey(selectedMatchDateKey);
 
-  renderMatchDateNavigator(groupedMatches);
+  renderMatchDateNavigatorWithPicker(groupedMatches);
   renderSelectedMatchDay(
     selectedMatchDateKey,
     groupedMatches[selectedMatchDateKey] || [],
@@ -2176,6 +2190,49 @@ function renderMatchDateNavigator(groupedMatches) {
         selectedMatchDateKey;
       renderMatches();
     });
+  });
+}
+
+function renderMatchDateNavigatorWithPicker(groupedMatches) {
+  const selectedDate = parseDateKey(selectedMatchDateKey);
+  const matches = groupedMatches[selectedMatchDateKey] || [];
+  const previousDateKey = shiftDateKey(selectedMatchDateKey, -1);
+  const nextDateKey = shiftDateKey(selectedMatchDateKey, 1);
+
+  els.matchDayTabs.innerHTML = `
+    <button class="day-step" type="button" data-direction="-1" ${previousDateKey ? "" : "disabled"} aria-label="Previous day">&lt;</button>
+    <div class="day-tab active">
+      <span>${formatTabDate(selectedDate)}</span>
+      <small>${matches.length} match${matches.length === 1 ? "" : "es"}</small>
+    </div>
+    <button class="day-step" type="button" data-direction="1" ${nextDateKey ? "" : "disabled"} aria-label="Next day">&gt;</button>
+    <button class="day-step calendar-step" type="button" data-open-date-picker aria-label="Choose match date">📅</button>
+    <input class="match-date-picker" type="date" min="${MATCH_DATE_MIN}" max="${MATCH_DATE_MAX}" value="${escapeHtml(selectedMatchDateKey)}" aria-label="Choose match date" />
+  `;
+
+  els.matchDayTabs.querySelectorAll(".day-step").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedMatchDateKey =
+        shiftDateKey(selectedMatchDateKey, Number(button.dataset.direction)) ||
+        selectedMatchDateKey;
+      renderMatches();
+    });
+  });
+
+  const datePicker = els.matchDayTabs.querySelector(".match-date-picker");
+  els.matchDayTabs
+    .querySelector("[data-open-date-picker]")
+    .addEventListener("click", () => {
+      if (typeof datePicker.showPicker === "function") {
+        datePicker.showPicker();
+      } else {
+        datePicker.focus();
+      }
+    });
+  datePicker.addEventListener("change", () => {
+    if (!datePicker.value) return;
+    selectedMatchDateKey = clampDateKey(datePicker.value);
+    renderMatches();
   });
 }
 
@@ -3022,8 +3079,17 @@ function renderTeams() {
     tab.classList.toggle("active", tab.dataset.teamView === selectedTeamView);
   });
 
-  els.teamsContent.innerHTML =
-    selectedTeamView === "groups" ? groupStageTeamsHtml() : knockoutTeamsHtml();
+  if (selectedTeamView === "groups") {
+    els.teamsContent.innerHTML = groupStageTeamsHtml();
+    return;
+  }
+
+  if (selectedTeamView === "knockout") {
+    els.teamsContent.innerHTML = knockoutTeamsHtml();
+    return;
+  }
+
+  els.teamsContent.innerHTML = allMatchesListHtml();
 }
 
 function groupStageTeamsHtml() {
@@ -3057,6 +3123,125 @@ function knockoutTeamsHtml() {
       <p class="muted">This view will be filled once the tournament has officially started and the qualified teams are known.</p>
     </section>
   `;
+}
+
+function allMatchesHtml() {
+  return `
+    <div class="all-matches-list">
+      ${[...matchesData]
+        .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+        .map(
+          (match) => `
+            <article class="all-match-card">
+              <div>
+                <p class="eyebrow">${escapeHtml(match.id)} · ${escapeHtml(match.group)}</p>
+                <strong>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
+              </div>
+              <div class="all-match-meta">
+                <time dateTime="${escapeHtml(match.kickoff)}">${formatDate(new Date(match.kickoff))}</time>
+                <span>${escapeHtml(match.venue)}</span>
+              </div>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function allMatchesListHtml() {
+  const filteredMatches = [...matchesData]
+    .filter(
+      (match) =>
+        !allMatchesTeamFilter ||
+        match.home === allMatchesTeamFilter ||
+        match.away === allMatchesTeamFilter,
+    )
+    .filter(
+      (match) => !allMatchesGroupFilter || match.group === allMatchesGroupFilter,
+    )
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  const groupedMatches = groupMatchesByDate(
+    filteredMatches,
+  );
+
+  return `
+    <div class="all-match-filters">
+      <label>
+        Country
+        <select data-all-matches-team-filter>
+          <option value="">All countries</option>
+          ${getAllMatchTeams()
+            .map(
+              (team) =>
+                `<option value="${escapeHtml(team)}" ${allMatchesTeamFilter === team ? "selected" : ""}>${escapeHtml(team)}</option>`,
+            )
+            .join("")}
+        </select>
+      </label>
+      <label>
+        Group / round
+        <select data-all-matches-group-filter>
+          <option value="">All groups and rounds</option>
+          ${getAllMatchGroups()
+            .map(
+              (group) =>
+                `<option value="${escapeHtml(group)}" ${allMatchesGroupFilter === group ? "selected" : ""}>${escapeHtml(group)}</option>`,
+            )
+            .join("")}
+        </select>
+      </label>
+    </div>
+    <div class="all-matches-list">
+      ${
+        Object.entries(groupedMatches)
+          .map(
+            ([dateKey, matches]) => `
+            <section class="match-day panel all-match-day">
+              <div class="match-day-head">
+                <div>
+                  <p class="eyebrow">${escapeHtml(dateKey)}</p>
+                  <h3>${formatDateHeading(parseDateKey(dateKey))}</h3>
+                </div>
+              </div>
+              <div class="match-day-list all-match-day-list">
+                ${matches
+                  .map(
+                    (match) => `
+                      <article class="all-match-card">
+                        <time class="all-match-time" dateTime="${escapeHtml(match.kickoff)}">${formatTime(new Date(match.kickoff))}</time>
+                        <div class="all-match-fixture">
+                          <p class="eyebrow">${escapeHtml(match.id)} - ${escapeHtml(match.group)}</p>
+                          <strong>${teamHtml(match.home)} <span>vs</span> ${teamHtml(match.away)}</strong>
+                        </div>
+                        <div class="all-match-meta">
+                          <span>${escapeHtml(match.venue)}</span>
+                        </div>
+                      </article>
+                    `,
+                  )
+                  .join("")}
+              </div>
+            </section>
+          `,
+          )
+          .join("") ||
+        `<p class="muted">No matches found for those filters.</p>`
+      }
+    </div>
+  `;
+}
+
+function getAllMatchTeams() {
+  return [
+    ...new Set(matchesData.flatMap((match) => [match.home, match.away])),
+  ].sort((a, b) => a.localeCompare(b));
+}
+
+function getAllMatchGroups() {
+  return [...new Set(matchesData.map((match) => match.group))].sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true }),
+  );
 }
 
 function getGroupStageTeams() {

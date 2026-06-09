@@ -102,6 +102,7 @@
               <p id="active-player-summary" class="muted">Create or select your player, then predict each score before the one-hour lockout.</p>
             </section>
             <section id="next-matches" class="next-matches panel"></section>
+            <p class="prediction-cue">Make predictions here</p>
             <div id="match-day-tabs" class="match-day-tabs" aria-label="Match day selector"></div>
             <div id="matches" class="match-grid"></div>
           </div>
@@ -189,6 +190,12 @@
               <div class="team-view-tabs" aria-label="Team view selector">
                 <button class="team-view-tab active" type="button" data-team-view="groups">Group stage</button>
                 <button class="team-view-tab" type="button" data-team-view="knockout">Knockout</button>
+              </div>
+            </div>
+            <div class="team-subview-row">
+              <span class="muted">Fixtures</span>
+              <div class="team-view-tabs match-view-tabs" aria-label="Match view selector">
+                <button class="team-view-tab" type="button" data-team-view="matches">All matches</button>
               </div>
             </div>
             <div id="teams-content" class="teams-content"></div>
