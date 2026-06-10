@@ -3090,6 +3090,7 @@ function renderLeaderboard() {
     rows
       .map((row, index) => {
         const rank = index + 1;
+        const showPlayerContext = leaderboardScope === WORLDWIDE_SCOPE;
         const podiumClass =
           rank === 1
             ? " leaderboard-row-gold"
@@ -3104,8 +3105,14 @@ function renderLeaderboard() {
           <td><span class="rank-badge">${index + 1}</span></td>
           <td>
             <strong class="leaderboard-name">${escapeHtml(row.player.name)}</strong>
-            <span class="leaderboard-id">${escapeHtml(row.player.id)}</span>
-            ${leaderboardLeagueHtml(row.player.leagueIds)}
+            ${
+              showPlayerContext
+                ? `
+                  <span class="leaderboard-id">${escapeHtml(row.player.id)}</span>
+                  ${leaderboardLeagueHtml(row.player.leagueIds)}
+                `
+                : ""
+            }
           </td>
           <td><strong class="leaderboard-points">${row.stats.points}</strong></td>
           <td>${row.stats.correctPredictions}</td>
