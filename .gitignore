@@ -1,2 +1,4 @@
 .env
 .venv
+wrangler.score-sync.toml
+.dev.vars

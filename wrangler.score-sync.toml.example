@@ -1,0 +1,15 @@
+name = "world-cup-score-sync"
+main = "workers/espn-score-sync.js"
+compatibility_date = "2026-06-10"
+
+[triggers]
+crons = ["* * * * *"]
+
+# Set these as secrets, not plain text:
+# wrangler secret put SUPABASE_URL --config wrangler.score-sync.toml
+# wrangler secret put SUPABASE_SERVICE_ROLE_KEY --config wrangler.score-sync.toml
+# wrangler secret put SCORE_SYNC_TOKEN --config wrangler.score-sync.toml
+
+# Optional variables:
+# SCORE_SYNC_START_MINUTES_BEFORE = "5"
+# SCORE_SYNC_STOP_MINUTES_AFTER = "150"
