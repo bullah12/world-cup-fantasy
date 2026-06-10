@@ -67,7 +67,7 @@ wrangler secret put SCORE_SYNC_TOKEN --config wrangler.score-sync.toml
 wrangler deploy --config wrangler.score-sync.toml
 ```
 
-The sample cron runs every minute, but the Worker exits early unless a match is inside the live score sync window. By default it only polls ESPN from 5 minutes before kick-off until 150 minutes after kick-off.
+The sample cron runs every minute during the tournament dates. Each run checks ESPN's scoreboard for today, plus nearby dates for any Supabase match inside the live score sync window. By default, that window starts 5 minutes before kick-off and ends 150 minutes after kick-off.
 
 ```toml
 [triggers]
@@ -87,5 +87,14 @@ You can also trigger it manually:
 ```powershell
 Invoke-RestMethod "https://your-worker.workers.dev/sync-scores" -Headers @{ Authorization = "Bearer YOUR_SCORE_SYNC_TOKEN" }
 ```
+
+To inspect ESPN names and mapping before the tournament:
+
+```powershell
+Invoke-RestMethod "https://your-worker.workers.dev/espn-teams" -Headers @{ Authorization = "Bearer YOUR_SCORE_SYNC_TOKEN" }
+Invoke-RestMethod "https://your-worker.workers.dev/mapping-check" -Headers @{ Authorization = "Bearer YOUR_SCORE_SYNC_TOKEN" }
+```
+
+`/espn-teams` returns ESPN team IDs/names. `/mapping-check` compares ESPN fixtures against your Supabase `matches` rows and reports any unmapped games.
 
 Keep the admin results page as a fallback. ESPN is convenient and free to poll, but it is not an official guaranteed API contract for this app.

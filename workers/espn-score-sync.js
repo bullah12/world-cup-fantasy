@@ -4,13 +4,17 @@ const DEFAULT_SYNC_START_MINUTES_BEFORE = 5;
 const DEFAULT_SYNC_STOP_MINUTES_AFTER = 150;
 
 const TEAM_ALIASES = {
-  "cote divoire": "cote divoire",
-  "cote d ivoire": "cote divoire",
-  "ivory coast": "cote divoire",
+  "bosnia herzegovina": "bosnia and herzegovina",
+  "bosnia and herzegovina": "bosnia and herzegovina",
+  "cote divoire": "cote d ivoire",
+  "cote d ivoire": "cote d ivoire",
+  "ivory coast": "cote d ivoire",
   "czech republic": "czechia",
-  "korea republic": "south korea",
-  "south korea": "south korea",
+  czechia: "czechia",
+  "korea republic": "korea republic",
+  "south korea": "korea republic",
   "united states": "united states",
+  "united states of america": "united states",
   usa: "united states",
   usmnt: "united states",
   turkey: "turkiye",
@@ -18,6 +22,7 @@ const TEAM_ALIASES = {
   "dr congo": "congo dr",
   "congo dr": "congo dr",
   "democratic republic of congo": "congo dr",
+  "democratic republic congo": "congo dr",
   curacao: "curacao",
   "cape verde": "cabo verde",
   "cabo verde": "cabo verde",
@@ -30,15 +35,28 @@ export default {
 
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname !== "/sync-scores") {
+    if (!["/sync-scores", "/espn-teams", "/mapping-check"].includes(url.pathname)) {
       return json({ ok: false, error: "Not found" }, 404);
     }
 
-    const authHeader = request.headers.get("authorization") || "";
-    if (env.SCORE_SYNC_TOKEN) {
-      const expected = `Bearer ${env.SCORE_SYNC_TOKEN}`;
-      if (authHeader !== expected) {
-        return json({ ok: false, error: "Unauthorized" }, 401);
+    const unauthorized = checkAuthorization(request, env);
+    if (unauthorized) return unauthorized;
+
+    if (url.pathname === "/espn-teams") {
+      try {
+        const result = await getEspnTeams(env);
+        return json({ ok: true, ...result });
+      } catch (error) {
+        return json({ ok: false, error: error.message }, 500);
+      }
+    }
+
+    if (url.pathname === "/mapping-check") {
+      try {
+        const result = await getMappingCheck(env);
+        return json({ ok: true, ...result });
+      } catch (error) {
+        return json({ ok: false, error: error.message }, 500);
       }
     }
 
@@ -51,30 +69,23 @@ export default {
   },
 };
 
+function checkAuthorization(request, env) {
+  const authHeader = request.headers.get("authorization") || "";
+  if (!env.SCORE_SYNC_TOKEN) return null;
+
+  const expected = `Bearer ${env.SCORE_SYNC_TOKEN}`;
+  if (authHeader === expected) return null;
+
+  return json({ ok: false, error: "Unauthorized" }, 401);
+}
+
 async function syncScores(env) {
   assertEnv(env, "SUPABASE_URL");
   assertEnv(env, "SUPABASE_SERVICE_ROLE_KEY");
 
-  const matches = await fetchSupabase(
-    env,
-    "/rest/v1/matches?select=id,home_team,away_team,kickoff",
-  );
+  const matches = await fetchAllMatches(env);
   const activeMatches = getActiveSyncMatches(matches, env);
-
-  if (activeMatches.length === 0) {
-    return {
-      skipped: true,
-      reason: "No matches are inside the live score sync window.",
-      checkedMatches: matches.length,
-      checkedDates: [],
-      espnEvents: 0,
-      mappedEvents: 0,
-      changedResults: 0,
-      changed: [],
-    };
-  }
-
-  const checkedDates = getEspnDateKeysForMatches(activeMatches);
+  const checkedDates = getScoreboardDateKeys(activeMatches);
   const scoreboards = await Promise.all(
     checkedDates.map((date) => fetchEspnScoreboard(date)),
   );
@@ -105,6 +116,7 @@ async function syncScores(env) {
 
   return {
     skipped: false,
+    checkedMatches: matches.length,
     activeMatches: activeMatches.length,
     checkedDates,
     espnEvents: events.length,
@@ -112,6 +124,94 @@ async function syncScores(env) {
     changedResults: changed.length,
     changed,
   };
+}
+
+async function getEspnTeams(env) {
+  const matches = await fetchAllMatches(env);
+  const checkedDates = getEspnDateKeysForMatches(matches);
+  const scoreboards = await Promise.all(
+    checkedDates.map((date) => fetchEspnScoreboard(date)),
+  );
+  const events = scoreboards.flatMap((scoreboard) => scoreboard.events || []);
+  const teamMap = new Map();
+
+  events.forEach((event) => {
+    const competition = event.competitions?.[0];
+    (competition?.competitors || []).forEach((competitor) => {
+      const team = competitor.team || {};
+      if (!team.id) return;
+      teamMap.set(team.id, {
+        espnTeamId: team.id,
+        abbreviation: team.abbreviation || "",
+        displayName: team.displayName || "",
+        shortDisplayName: team.shortDisplayName || "",
+        name: team.name || "",
+        location: team.location || "",
+        normalizedDisplayName: normalizeTeam(team.displayName || team.name),
+      });
+    });
+  });
+
+  return {
+    checkedDates,
+    eventCount: events.length,
+    teams: [...teamMap.values()].sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    ),
+  };
+}
+
+async function getMappingCheck(env) {
+  const matches = await fetchAllMatches(env);
+  const checkedDates = getEspnDateKeysForMatches(matches);
+  const scoreboards = await Promise.all(
+    checkedDates.map((date) => fetchEspnScoreboard(date)),
+  );
+  const events = scoreboards.flatMap((scoreboard) => scoreboard.events || []);
+  const mappings = events.map((event) => {
+    const competition = event.competitions?.[0];
+    const competitors = competition?.competitors || [];
+    const home = competitors.find((team) => team.homeAway === "home");
+    const away = competitors.find((team) => team.homeAway === "away");
+    const match =
+      home && away
+        ? findMatchingMatch(
+            matches,
+            getEspnTeamNames(home),
+            getEspnTeamNames(away),
+            competition?.date || event.date,
+          )
+        : null;
+
+    return {
+      espnEventId: event.id,
+      espnDate: competition?.date || event.date || "",
+      espnHome: home?.team?.displayName || "",
+      espnAway: away?.team?.displayName || "",
+      matched: Boolean(match),
+      supabaseMatchId: match?.id || "",
+      supabaseHome: match?.home_team || "",
+      supabaseAway: match?.away_team || "",
+      supabaseKickoff: match?.kickoff || "",
+    };
+  });
+
+  return {
+    checkedDates,
+    eventCount: events.length,
+    mappedCount: mappings.filter((mapping) => mapping.matched).length,
+    unmappedCount: mappings.filter((mapping) => !mapping.matched).length,
+    mappings,
+  };
+}
+
+async function fetchAllMatches(env) {
+  assertEnv(env, "SUPABASE_URL");
+  assertEnv(env, "SUPABASE_SERVICE_ROLE_KEY");
+  return fetchSupabase(
+    env,
+    "/rest/v1/matches?select=id,home_team,away_team,kickoff",
+  );
 }
 
 function getActiveSyncMatches(matches, env, now = new Date()) {
@@ -132,14 +232,36 @@ function getActiveSyncMatches(matches, env, now = new Date()) {
   });
 }
 
+function getScoreboardDateKeys(activeMatches, now = new Date()) {
+  return [
+    ...new Set([
+      formatEspnDateKey(now),
+      ...getEspnDateKeysForMatches(activeMatches),
+    ]),
+  ];
+}
+
 function getEspnDateKeysForMatches(matches) {
   return [
     ...new Set(
-      matches.map((match) =>
-        new Date(match.kickoff).toISOString().slice(0, 10).replaceAll("-", ""),
+      matches.flatMap((match) =>
+        getAdjacentEspnDateKeys(new Date(match.kickoff)),
       ),
     ),
   ];
+}
+
+function getAdjacentEspnDateKeys(date) {
+  if (!Number.isFinite(date.getTime())) return [];
+  return [-1, 0, 1].map((offset) => {
+    const adjacent = new Date(date);
+    adjacent.setUTCDate(adjacent.getUTCDate() + offset);
+    return formatEspnDateKey(adjacent);
+  });
+}
+
+function formatEspnDateKey(date) {
+  return date.toISOString().slice(0, 10).replaceAll("-", "");
 }
 
 async function fetchEspnScoreboard(dateKey) {
@@ -205,7 +327,7 @@ function findMatchingMatch(matches, homeNames, awayNames, espnDate) {
 
     const localKickoff = new Date(match.kickoff).getTime();
     const diffHours = Math.abs(localKickoff - kickoff) / 36e5;
-    return diffHours <= 12;
+    return diffHours <= 36;
   });
 }
 
@@ -225,7 +347,7 @@ function sameTeam(left, right) {
 }
 
 function normalizeTeam(value) {
-  const key = String(value || "")
+  const key = fixCommonTeamEncoding(String(value || ""))
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/&/g, " and ")
@@ -233,6 +355,20 @@ function normalizeTeam(value) {
     .trim()
     .toLowerCase();
   return TEAM_ALIASES[key] || key;
+}
+
+function fixCommonTeamEncoding(value) {
+  return value
+    .replace(/T.{1,16}rkiye/gi, "Turkiye")
+    .replace(/C.{1,32}Ivoire/gi, "Cote d Ivoire")
+    .replace(/Cura.{1,12}ao/gi, "Curacao");
+}
+
+function fixMojibake(value) {
+  return value
+    .replace(/TÃƒÂ¼rkiye|TÃ¼rkiye|TÃ¼rkiye/g, "Turkiye")
+    .replace(/CÃƒÂ´te dÃ¢Â€Â™Ivoire|CÃ´te dâ€™Ivoire/g, "Cote d Ivoire")
+    .replace(/CuraÃƒÂ§ao|CuraÃ§ao/g, "Curacao");
 }
 
 async function upsertResult(env, result) {

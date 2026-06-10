@@ -1399,7 +1399,7 @@ async function loadSupabaseState() {
       supabaseSelect("results"),
       supabaseSelect("app_settings"),
       supabaseSelect("match_predictions"),
-      supabaseSelect("tournament_predictions"),
+      supabaseSelect("player_tournament_picks"),
     ]);
 
   modelPredictions = matchPredictions || [];
@@ -1641,7 +1641,7 @@ async function deletePrediction(playerId, matchId) {
 
 async function saveTournamentPrediction(prediction) {
   if (!supabaseClient) return;
-  await supabaseUpsert("tournament_predictions", {
+  await supabaseUpsert("player_tournament_picks", {
     player_id: prediction.playerId,
     most_goals: prediction.mostGoals || null,
     most_assists: prediction.mostAssists || null,
@@ -1727,7 +1727,7 @@ function setupRealtimeSync() {
     )
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "tournament_predictions" },
+      { event: "*", schema: "public", table: "player_tournament_picks" },
       refreshFromSupabase,
     )
     .on(
