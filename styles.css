@@ -1477,6 +1477,28 @@ th {
   font-weight: 900;
 }
 
+.tournament-predictions-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.tournament-prediction-form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.tournament-prediction-form input,
+.tournament-prediction-form select {
+  font-weight: 800;
+}
+
+.tournament-prediction-form input:disabled,
+.tournament-prediction-form select:disabled {
+  background: #f1ece2;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .compact-prediction {
   align-items: center;
   box-shadow: none;
@@ -2954,6 +2976,7 @@ main {
 .team-card,
 .stat-card,
 .model-prediction-card,
+.tournament-predictions-panel,
 .bracket-match,
 .group-projection-card,
 .group-projection-row,

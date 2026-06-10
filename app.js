@@ -920,6 +920,7 @@ const SCHEDULE_VERSION = "world-cup-2026-kagglehub-v1";
 const MATCH_DATE_MIN = "2026-06-01";
 const MATCH_DATE_MAX = "2026-08-31";
 const MATCH_IDS = new Set(MATCHES.map((match) => match.id));
+const TOURNAMENT_PREDICTION_SAVE_DEBOUNCE_MS = 600;
 
 const state = loadState();
 let matchesData = [...MATCHES];
@@ -995,6 +996,10 @@ const els = {
   modelVersionSelect: document.querySelector("#model-version-select"),
   statsSummary: document.querySelector("#stats-summary"),
   matchPredictions: document.querySelector("#match-predictions"),
+  tournamentPredictionForm: document.querySelector("#tournament-prediction-form"),
+  tournamentPredictionStatus: document.querySelector(
+    "#tournament-prediction-status",
+  ),
 };
 
 els.predictionPlayerSelect.addEventListener("change", () => {
@@ -1005,6 +1010,18 @@ els.predictionPlayerSelect.addEventListener("change", () => {
 els.modelVersionSelect.addEventListener("change", () => {
   selectedModelVersion = els.modelVersionSelect.value;
   renderStats();
+});
+
+els.tournamentPredictionForm.addEventListener(
+  "input",
+  handleTournamentPredictionInput,
+);
+els.tournamentPredictionForm.addEventListener(
+  "change",
+  handleTournamentPredictionInput,
+);
+els.tournamentPredictionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
 });
 
 els.playerLeague.addEventListener("change", () => {
@@ -1308,6 +1325,7 @@ function normalizeState(value) {
     leagues,
     players,
     predictions: value.predictions || {},
+    tournamentPredictions: value.tournamentPredictions || {},
     results: value.results || {},
     activePlayerId: value.activePlayerId || "",
     config: {
@@ -1366,14 +1384,22 @@ async function checkAdminAccess() {
 async function loadSupabaseState() {
   await seedSupabaseDefaults();
 
-  const [players, matches, predictions, results, settings, matchPredictions] =
-    await Promise.all([
+  const [
+    players,
+    matches,
+    predictions,
+    results,
+    settings,
+    matchPredictions,
+    tournamentPredictions,
+  ] = await Promise.all([
       supabaseSelect("players"),
       supabaseSelect("matches"),
       supabaseSelect("predictions"),
       supabaseSelect("results"),
       supabaseSelect("app_settings"),
       supabaseSelect("match_predictions"),
+      supabaseSelect("tournament_predictions"),
     ]);
 
   modelPredictions = matchPredictions || [];
@@ -1411,6 +1437,20 @@ async function loadSupabaseState() {
         matchId: prediction.match_id,
         homeScore: prediction.home_score,
         awayScore: prediction.away_score,
+        updatedAt: prediction.updated_at,
+      },
+    ]),
+  );
+
+  state.tournamentPredictions = Object.fromEntries(
+    tournamentPredictions.map((prediction) => [
+      prediction.player_id,
+      {
+        playerId: prediction.player_id,
+        mostGoals: prediction.most_goals || "",
+        mostAssists: prediction.most_assists || "",
+        goldenGlove: prediction.golden_glove || "",
+        worldCupWinner: prediction.world_cup_winner || "",
         updatedAt: prediction.updated_at,
       },
     ]),
@@ -1599,6 +1639,18 @@ async function deletePrediction(playerId, matchId) {
   });
 }
 
+async function saveTournamentPrediction(prediction) {
+  if (!supabaseClient) return;
+  await supabaseUpsert("tournament_predictions", {
+    player_id: prediction.playerId,
+    most_goals: prediction.mostGoals || null,
+    most_assists: prediction.mostAssists || null,
+    golden_glove: prediction.goldenGlove || null,
+    world_cup_winner: prediction.worldCupWinner || null,
+    updated_at: prediction.updatedAt,
+  });
+}
+
 async function savePredictionHistory(prediction) {
   if (!supabaseClient) return;
   const historyKey = `${prediction.playerId}:${prediction.matchId}:${prediction.action}`;
@@ -1671,6 +1723,11 @@ function setupRealtimeSync() {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "predictions" },
+      refreshFromSupabase,
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "tournament_predictions" },
       refreshFromSupabase,
     )
     .on(
@@ -1791,7 +1848,10 @@ function openPlayerModal() {
   renderPlayerLeagueOptions();
   renderModalPlayerOptions();
   els.playerModal.hidden = false;
-  els.playerUsername.focus();
+  els.playerModal.scrollTop = 0;
+  const modalCard = els.playerModal.querySelector(".modal-card");
+  modalCard.scrollTop = 0;
+  document.querySelector("#player-modal-title").focus({ preventScroll: true });
 }
 
 function closePlayerModal() {
@@ -1991,6 +2051,7 @@ function render() {
   renderTeams();
   renderPointsBreakdown();
   renderPlayerPredictions();
+  renderTournamentPredictions();
   renderAdminAccess();
   renderAdminSections();
   renderResultsAdmin();
@@ -3306,6 +3367,98 @@ function renderPointsBreakdown() {
     .join("");
 }
 
+function renderTournamentPredictions() {
+  const form = els.tournamentPredictionForm;
+  const prediction = getTournamentPrediction(activePlayerId);
+  const locked = isTournamentPredictionLocked();
+  const hasPlayer = Boolean(activePlayerId && state.players[activePlayerId]);
+  const disabled = !hasPlayer || locked;
+
+  form.mostGoals.value = prediction?.mostGoals || "";
+  form.mostAssists.value = prediction?.mostAssists || "";
+  form.goldenGlove.value = prediction?.goldenGlove || "";
+  form.worldCupWinner.innerHTML = `
+    <option value="">Select winner</option>
+    ${getTournamentWinnerTeams()
+      .map(
+        (team) =>
+          `<option value="${escapeHtml(team)}" ${prediction?.worldCupWinner === team ? "selected" : ""}>${escapeHtml(team)}</option>`,
+      )
+      .join("")}
+  `;
+
+  Array.from(form.elements).forEach((field) => {
+    field.disabled = disabled;
+  });
+
+  if (!hasPlayer) {
+    els.tournamentPredictionStatus.textContent =
+      "Create or select your player to make tournament predictions.";
+  } else if (locked) {
+    els.tournamentPredictionStatus.textContent =
+      "Tournament predictions are locked now the World Cup has started.";
+  } else if (prediction) {
+    els.tournamentPredictionStatus.textContent =
+      "Saved for this player. You can edit these until the World Cup starts.";
+  } else {
+    els.tournamentPredictionStatus.textContent =
+      "Pick your tournament calls before the World Cup starts.";
+  }
+}
+
+function handleTournamentPredictionInput(event) {
+  const form = event.currentTarget;
+  if (!activePlayerId || isTournamentPredictionLocked()) return;
+
+  clearTimeout(form.saveTimer);
+  els.tournamentPredictionStatus.textContent = "Saving tournament predictions...";
+  form.saveTimer = setTimeout(() => {
+    saveTournamentPredictionForm(form).catch((error) => {
+      console.error(error);
+      els.tournamentPredictionStatus.textContent =
+        error.message || "Could not save tournament predictions.";
+    });
+  }, TOURNAMENT_PREDICTION_SAVE_DEBOUNCE_MS);
+}
+
+async function saveTournamentPredictionForm(form) {
+  if (!activePlayerId || isTournamentPredictionLocked()) return;
+
+  const prediction = {
+    playerId: activePlayerId,
+    mostGoals: form.mostGoals.value.trim(),
+    mostAssists: form.mostAssists.value.trim(),
+    goldenGlove: form.goldenGlove.value.trim(),
+    worldCupWinner: form.worldCupWinner.value,
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.tournamentPredictions[activePlayerId] = prediction;
+  await saveTournamentPrediction(prediction);
+  saveState();
+  els.tournamentPredictionStatus.textContent = "Tournament predictions saved.";
+}
+
+function getTournamentPrediction(playerId) {
+  return state.tournamentPredictions[playerId];
+}
+
+function getTournamentWinnerTeams() {
+  return getAllMatchTeams().filter(
+    (team) => !team.startsWith("Group ") && !team.startsWith("Match "),
+  );
+}
+
+function isTournamentPredictionLocked() {
+  return Date.now() >= getTournamentStartTime();
+}
+
+function getTournamentStartTime() {
+  return Math.min(
+    ...matchesData.map((match) => new Date(match.kickoff).getTime()),
+  );
+}
+
 function leaderboardFormHtml(playerId) {
   const recent = getRecentPlayerForm(playerId);
   const items = [...recent];
@@ -3764,6 +3917,7 @@ async function deleteUser(playerId) {
       delete state.predictions[key];
     }
   });
+  delete state.tournamentPredictions[playerId];
 
   if (activePlayerId === playerId) {
     activePlayerId = "";

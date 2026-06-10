@@ -47,7 +47,7 @@
     <div id="player-modal" class="modal-backdrop" hidden>
       <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
         <div class="section-head small">
-          <h2 id="player-modal-title">Player access</h2>
+          <h2 id="player-modal-title" tabindex="-1">Player access</h2>
           <button id="close-player-modal" class="secondary icon-button" type="button" aria-label="Close">&times;</button>
         </div>
         <label class="player-access-league" for="player-league">
@@ -108,11 +108,6 @@
           </div>
 
           <aside class="side-stack">
-            <section id="points-breakdown" class="panel points-breakdown">
-              <h2>Points breakdown</h2>
-              <div id="points-breakdown-list" class="points-breakdown-list"></div>
-            </section>
-
             <section class="panel">
               <div class="prediction-panel-head">
                 <div>
@@ -129,6 +124,38 @@
                 <strong id="prediction-total" class="points-total">0</strong>
               </div>
               <div id="player-predictions" class="prediction-list"></div>
+            </section>
+
+            <section class="panel tournament-predictions-panel">
+              <div class="prediction-panel-head">
+                <div>
+                  <h2>Tournament predictions</h2>
+                  <p id="tournament-prediction-status" class="muted">Pick your tournament calls before the World Cup starts.</p>
+                </div>
+              </div>
+              <form id="tournament-prediction-form" class="tournament-prediction-form">
+                <label for="tournament-most-goals">
+                  Most goals
+                  <input id="tournament-most-goals" name="mostGoals" autocomplete="off" />
+                </label>
+                <label for="tournament-most-assists">
+                  Most assists
+                  <input id="tournament-most-assists" name="mostAssists" autocomplete="off" />
+                </label>
+                <label for="tournament-golden-glove">
+                  Golden glove
+                  <input id="tournament-golden-glove" name="goldenGlove" autocomplete="off" />
+                </label>
+                <label for="tournament-winner">
+                  World Cup winner
+                  <select id="tournament-winner" name="worldCupWinner"></select>
+                </label>
+              </form>
+            </section>
+
+            <section id="points-breakdown" class="panel points-breakdown">
+              <h2>Points breakdown</h2>
+              <div id="points-breakdown-list" class="points-breakdown-list"></div>
             </section>
           </aside>
         </section>
