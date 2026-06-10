@@ -3088,9 +3088,19 @@ function renderLeaderboard() {
       : "Showing every player across all leagues and players without a league.";
   els.leaderboardBody.innerHTML =
     rows
-      .map(
-        (row, index) => `
-        <tr class="leaderboard-row">
+      .map((row, index) => {
+        const rank = index + 1;
+        const podiumClass =
+          rank === 1
+            ? " leaderboard-row-gold"
+            : rank === 2
+              ? " leaderboard-row-silver"
+              : rank === 3
+                ? " leaderboard-row-bronze"
+                : "";
+
+        return `
+        <tr class="leaderboard-row${podiumClass}">
           <td><span class="rank-badge">${index + 1}</span></td>
           <td>
             <strong class="leaderboard-name">${escapeHtml(row.player.name)}</strong>
@@ -3101,8 +3111,8 @@ function renderLeaderboard() {
           <td>${row.stats.correctPredictions}</td>
           <td>${leaderboardFormHtml(row.player.id)}</td>
         </tr>
-      `,
-      )
+      `;
+      })
       .join("") ||
     `<tr><td colspan="5" class="muted">${leaderboardScope !== WORLDWIDE_SCOPE ? "No players in this league yet." : "No players yet."}</td></tr>`;
 }

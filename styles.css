@@ -3007,6 +3007,89 @@ td {
   background: #fff3d8;
 }
 
+.leaderboard-row-gold td,
+.leaderboard-row-silver td,
+.leaderboard-row-bronze td {
+  background-position: center;
+  background-size: 140% 140%;
+}
+
+.leaderboard-row-gold td {
+  background:
+    linear-gradient(135deg, rgba(255, 243, 194, 0.96), rgba(255, 250, 240, 0.92)),
+    #fff6d9;
+  border-color: rgba(202, 143, 35, 0.48);
+}
+
+.leaderboard-row-gold:hover td {
+  background:
+    linear-gradient(135deg, rgba(255, 235, 166, 0.98), rgba(255, 246, 217, 0.94)),
+    #fff1c9;
+}
+
+.leaderboard-row-silver td {
+  background:
+    linear-gradient(135deg, rgba(238, 242, 246, 0.98), rgba(255, 250, 240, 0.92)),
+    #f6f8fa;
+  border-color: rgba(136, 153, 170, 0.42);
+}
+
+.leaderboard-row-silver:hover td {
+  background:
+    linear-gradient(135deg, rgba(226, 232, 240, 0.98), rgba(248, 250, 252, 0.96)),
+    #eef2f6;
+}
+
+.leaderboard-row-bronze td {
+  background:
+    linear-gradient(135deg, rgba(245, 207, 164, 0.9), rgba(255, 250, 240, 0.92)),
+    #fff0df;
+  border-color: rgba(174, 100, 43, 0.42);
+}
+
+.leaderboard-row-bronze:hover td {
+  background:
+    linear-gradient(135deg, rgba(237, 185, 130, 0.94), rgba(255, 243, 226, 0.96)),
+    #ffe8d1;
+}
+
+.leaderboard-row-gold .rank-badge,
+.leaderboard-row-silver .rank-badge,
+.leaderboard-row-bronze .rank-badge {
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  box-shadow: 0 8px 18px rgba(54, 34, 14, 0.14);
+}
+
+.leaderboard-row-gold .rank-badge {
+  background: linear-gradient(135deg, #ffdf64, #b96f12);
+  color: #291a04;
+}
+
+.leaderboard-row-silver .rank-badge {
+  background: linear-gradient(135deg, #f8fafc, #8fa0ad);
+  color: #1f2a35;
+}
+
+.leaderboard-row-bronze .rank-badge {
+  background: linear-gradient(135deg, #f4b66f, #9a5522);
+  color: #2b1305;
+}
+
+.leaderboard-row-gold .leaderboard-points,
+.leaderboard-row-gold .leaderboard-league {
+  color: #7a4a08;
+}
+
+.leaderboard-row-silver .leaderboard-points,
+.leaderboard-row-silver .leaderboard-league {
+  color: #415161;
+}
+
+.leaderboard-row-bronze .leaderboard-points,
+.leaderboard-row-bronze .leaderboard-league {
+  color: #7a3b13;
+}
+
 .leaderboard-points,
 .leaderboard-league,
 .prediction-score,
@@ -3138,6 +3221,39 @@ td {
 }
 
 @media (max-width: 620px) {
+  .leaderboard-row.leaderboard-row-gold,
+  .leaderboard-row.leaderboard-row-silver,
+  .leaderboard-row.leaderboard-row-bronze {
+    box-shadow: 0 12px 24px rgba(54, 34, 14, 0.1);
+  }
+
+  .leaderboard-row.leaderboard-row-gold {
+    background:
+      linear-gradient(135deg, rgba(255, 243, 194, 0.96), rgba(255, 250, 240, 0.94)),
+      #fff6d9;
+    border-color: rgba(202, 143, 35, 0.5);
+  }
+
+  .leaderboard-row.leaderboard-row-silver {
+    background:
+      linear-gradient(135deg, rgba(238, 242, 246, 0.98), rgba(255, 250, 240, 0.94)),
+      #f6f8fa;
+    border-color: rgba(136, 153, 170, 0.44);
+  }
+
+  .leaderboard-row.leaderboard-row-bronze {
+    background:
+      linear-gradient(135deg, rgba(245, 207, 164, 0.9), rgba(255, 250, 240, 0.94)),
+      #fff0df;
+    border-color: rgba(174, 100, 43, 0.44);
+  }
+
+  .leaderboard-row-gold td,
+  .leaderboard-row-silver td,
+  .leaderboard-row-bronze td {
+    background: transparent;
+  }
+
   body {
     padding-bottom: 76px;
   }
