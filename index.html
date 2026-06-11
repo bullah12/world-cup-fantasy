@@ -14,13 +14,33 @@
           <span>Fantasy World Cup</span>
         </div>
         <div class="nav-tabs" aria-label="Page tabs">
-          <button class="nav-tab active" type="button" data-view-target="main-view">Home</button>
-          <button class="nav-tab" type="button" data-view-target="leaderboard-view">Leaderboard</button>
-          <button class="nav-tab" type="button" data-view-target="teams-view">Teams</button>
-          <button class="nav-tab" type="button" data-view-target="stats-view">Stats</button>
+          <button
+            class="nav-tab active"
+            type="button"
+            data-view-target="main-view"
+          >
+            Home
+          </button>
+          <button
+            class="nav-tab"
+            type="button"
+            data-view-target="leaderboard-view"
+          >
+            Leaderboard
+          </button>
+          <button class="nav-tab" type="button" data-view-target="teams-view">
+            Teams
+          </button>
+          <button class="nav-tab" type="button" data-view-target="stats-view">
+            Stats
+          </button>
         </div>
         <div class="nav-player">
-          <button id="player-nav-button" class="player-nav-button" type="button">
+          <button
+            id="player-nav-button"
+            class="player-nav-button"
+            type="button"
+          >
             <span id="player-nav-label">Create player</span>
             <strong id="active-player-name"></strong>
           </button>
@@ -31,9 +51,9 @@
           <p class="eyebrow">Family and friends World Cup fantasy</p>
           <h1>Welcome to Fantasy World Cup 2026.</h1>
           <p class="intro">
-            Create your player, predict match scores, and climb the family leaderboard.
-            Get your winners right, chase perfect scores, and stay in the running for
-            some great prizes.
+            Create your player, predict match scores, and climb the family
+            leaderboard. Get your winners right, chase perfect scores, and stay
+            in the running for some great prizes.
           </p>
           <div class="hero-points">
             <span>Predict before kick-off</span>
@@ -45,17 +65,37 @@
     </header>
 
     <div id="player-modal" class="modal-backdrop" hidden>
-      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
+      <section
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="player-modal-title"
+      >
         <div class="section-head small">
           <h2 id="player-modal-title" tabindex="-1">Player access</h2>
-          <button id="close-player-modal" class="secondary icon-button" type="button" aria-label="Close">&times;</button>
+          <button
+            id="close-player-modal"
+            class="secondary icon-button"
+            type="button"
+            aria-label="Close"
+          >
+            &times;
+          </button>
         </div>
         <label class="player-access-league" for="player-league">
           <span class="label-with-help">
             League
-            <button class="help-tooltip mobile-tooltip-trigger" type="button" aria-label="League help" aria-expanded="false">
+            <button
+              class="help-tooltip mobile-tooltip-trigger"
+              type="button"
+              aria-label="League help"
+              aria-expanded="false"
+            >
               ?
-              <span class="mobile-tooltip">If you'd like a league added, contact Abdullah Taj to add the league for you.</span>
+              <span class="mobile-tooltip"
+                >If you'd like a league added, contact Abdullah Taj to add the
+                league for you.</span
+              >
             </button>
           </span>
           <select id="player-league" name="player-league"></select>
@@ -63,8 +103,17 @@
         <section class="existing-player-panel">
           <h3>Existing player</h3>
           <div class="modal-login-row">
-            <select id="modal-player-select" aria-label="Existing player"></select>
-            <input id="modal-player-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Player password" />
+            <select
+              id="modal-player-select"
+              aria-label="Existing player"
+            ></select>
+            <input
+              id="modal-player-password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Password"
+              aria-label="Player password"
+            />
             <button id="modal-login-player" type="button">Log in</button>
           </div>
           <p id="modal-login-message" class="muted"></p>
@@ -73,17 +122,37 @@
           <h3>Create new player</h3>
           <label for="player-username">
             Username
-            <input id="player-username" name="player-username" autocomplete="username" required />
+            <input
+              id="player-username"
+              name="player-username"
+              autocomplete="username"
+              required
+            />
           </label>
           <label for="player-display-name">
             Display name
-            <input id="player-display-name" name="player-display-name" autocomplete="name" required />
+            <input
+              id="player-display-name"
+              name="player-display-name"
+              autocomplete="name"
+              required
+            />
           </label>
           <label for="player-password">
             Password
-            <input id="player-password" name="player-password" type="password" autocomplete="new-password" minlength="4" required />
+            <input
+              id="player-password"
+              name="player-password"
+              type="password"
+              autocomplete="new-password"
+              minlength="4"
+              required
+            />
           </label>
-          <p class="muted">This helps stop other players logging in as you and changing your predictions.</p>
+          <p class="muted">
+            This helps stop other players logging in as you and changing your
+            predictions.
+          </p>
           <button type="submit">Create player</button>
           <p id="created-player" class="muted"></p>
         </form>
@@ -99,11 +168,18 @@
                 <p class="eyebrow">Make your picks</p>
                 <h2>Upcoming matches</h2>
               </div>
-              <p id="active-player-summary" class="muted">Create or select your player, then predict each score before the one-hour lockout.</p>
+              <p id="active-player-summary" class="muted">
+                Create or select your player, then predict each score before the
+                one-hour lockout.
+              </p>
             </section>
             <section id="next-matches" class="next-matches panel"></section>
             <p class="prediction-cue">Make predictions here</p>
-            <div id="match-day-tabs" class="match-day-tabs" aria-label="Match day selector"></div>
+            <div
+              id="match-day-tabs"
+              class="match-day-tabs"
+              aria-label="Match day selector"
+            ></div>
             <div id="matches" class="match-grid"></div>
           </div>
 
@@ -112,9 +188,14 @@
               <div class="prediction-panel-head">
                 <div>
                   <h2>Player predictions</h2>
-                  <p class="muted">View any player's predictions individually.</p>
+                  <p class="muted">
+                    View any player's predictions individually.
+                  </p>
                 </div>
-                <label class="prediction-player-picker" for="prediction-player-select">
+                <label
+                  class="prediction-player-picker"
+                  for="prediction-player-select"
+                >
                   <span class="visually-hidden">Viewing player</span>
                   <select id="prediction-player-select"></select>
                 </label>
@@ -130,21 +211,38 @@
               <div class="prediction-panel-head">
                 <div>
                   <h2>Tournament predictions</h2>
-                  <p id="tournament-prediction-status" class="muted">Pick your tournament calls before the World Cup starts.</p>
+                  <p id="tournament-prediction-status" class="muted">
+                    Pick your tournament calls before the World Cup starts.
+                  </p>
                 </div>
               </div>
-              <form id="tournament-prediction-form" class="tournament-prediction-form">
+              <form
+                id="tournament-prediction-form"
+                class="tournament-prediction-form"
+              >
                 <label for="tournament-most-goals">
-                  Most goals
-                  <input id="tournament-most-goals" name="mostGoals" autocomplete="off" />
+                  Most goals Player
+                  <input
+                    id="tournament-most-goals"
+                    name="mostGoals"
+                    autocomplete="off"
+                  />
                 </label>
                 <label for="tournament-most-assists">
-                  Most assists
-                  <input id="tournament-most-assists" name="mostAssists" autocomplete="off" />
+                  Most assists Player
+                  <input
+                    id="tournament-most-assists"
+                    name="mostAssists"
+                    autocomplete="off"
+                  />
                 </label>
                 <label for="tournament-golden-glove">
-                  Golden glove
-                  <input id="tournament-golden-glove" name="goldenGlove" autocomplete="off" />
+                  Golden glove Player
+                  <input
+                    id="tournament-golden-glove"
+                    name="goldenGlove"
+                    autocomplete="off"
+                  />
                 </label>
                 <label for="tournament-winner">
                   World Cup winner
@@ -155,7 +253,10 @@
 
             <section id="points-breakdown" class="panel points-breakdown">
               <h2>Points breakdown</h2>
-              <div id="points-breakdown-list" class="points-breakdown-list"></div>
+              <div
+                id="points-breakdown-list"
+                class="points-breakdown-list"
+              ></div>
             </section>
           </aside>
         </section>
@@ -172,7 +273,11 @@
               <span id="leaderboard-count" class="pill"></span>
             </div>
             <div class="leaderboard-controls">
-              <div id="leaderboard-scope-tabs" class="leaderboard-scope-tabs" aria-label="Leaderboard scope"></div>
+              <div
+                id="leaderboard-scope-tabs"
+                class="leaderboard-scope-tabs"
+                aria-label="Leaderboard scope"
+              ></div>
               <p id="leaderboard-scope-summary" class="muted"></p>
             </div>
             <div class="table-wrap">
@@ -195,11 +300,20 @@
                   Join another league
                   <select id="join-league-select"></select>
                 </label>
-                <button id="join-league-button" type="button">Join league</button>
+                <button id="join-league-button" type="button">
+                  Join league
+                </button>
                 <p id="join-league-message" class="muted"></p>
               </div>
               <div class="leaderboard-actions">
-                <button id="leave-league-button" class="danger-button" type="button" hidden>Leave league</button>
+                <button
+                  id="leave-league-button"
+                  class="danger-button"
+                  type="button"
+                  hidden
+                >
+                  Leave league
+                </button>
               </div>
             </div>
           </section>
@@ -215,14 +329,35 @@
                 <h2>Teams</h2>
               </div>
               <div class="team-view-tabs" aria-label="Team view selector">
-                <button class="team-view-tab active" type="button" data-team-view="groups">Group stage</button>
-                <button class="team-view-tab" type="button" data-team-view="knockout">Knockout</button>
+                <button
+                  class="team-view-tab active"
+                  type="button"
+                  data-team-view="groups"
+                >
+                  Group stage
+                </button>
+                <button
+                  class="team-view-tab"
+                  type="button"
+                  data-team-view="knockout"
+                >
+                  Knockout
+                </button>
               </div>
             </div>
             <div class="team-subview-row">
               <span class="muted">Fixtures</span>
-              <div class="team-view-tabs match-view-tabs" aria-label="Match view selector">
-                <button class="team-view-tab" type="button" data-team-view="matches">All matches</button>
+              <div
+                class="team-view-tabs match-view-tabs"
+                aria-label="Match view selector"
+              >
+                <button
+                  class="team-view-tab"
+                  type="button"
+                  data-team-view="matches"
+                >
+                  All matches
+                </button>
               </div>
             </div>
             <div id="teams-content" class="teams-content"></div>
@@ -253,15 +388,28 @@
       <section id="admin-view" class="app-view">
         <section id="admin-login" class="panel admin-login">
           <h2>Admin access</h2>
-          <p class="muted">Sign in with your Supabase admin account to manage users, results, and scoring parameters.</p>
+          <p class="muted">
+            Sign in with your Supabase admin account to manage users, results,
+            and scoring parameters.
+          </p>
           <form id="admin-login-form" class="inline-form">
             <label for="admin-email">
               Email
-              <input id="admin-email" type="email" autocomplete="username" required />
+              <input
+                id="admin-email"
+                type="email"
+                autocomplete="username"
+                required
+              />
             </label>
             <label for="admin-password">
               Password
-              <input id="admin-password" type="password" autocomplete="current-password" required />
+              <input
+                id="admin-password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
             </label>
             <button type="submit">Unlock</button>
           </form>
@@ -271,19 +419,47 @@
         <section id="admin-content" class="admin-content" hidden>
           <section class="admin-page">
             <div class="admin-section-tabs" aria-label="Admin sections">
-              <button class="admin-section-tab active" type="button" data-admin-section="results">Results</button>
-              <button class="admin-section-tab" type="button" data-admin-section="parameters">Parameters</button>
-              <button class="admin-section-tab" type="button" data-admin-section="leagues">Leagues</button>
-              <button class="admin-section-tab" type="button" data-admin-section="users">Users</button>
+              <button
+                class="admin-section-tab active"
+                type="button"
+                data-admin-section="results"
+              >
+                Results
+              </button>
+              <button
+                class="admin-section-tab"
+                type="button"
+                data-admin-section="parameters"
+              >
+                Parameters
+              </button>
+              <button
+                class="admin-section-tab"
+                type="button"
+                data-admin-section="leagues"
+              >
+                Leagues
+              </button>
+              <button
+                class="admin-section-tab"
+                type="button"
+                data-admin-section="users"
+              >
+                Users
+              </button>
             </div>
 
-            <section class="panel admin-panel active" data-admin-panel="results">
+            <section
+              class="panel admin-panel active"
+              data-admin-panel="results"
+            >
               <div class="section-head small">
                 <h2>Results admin</h2>
                 <span class="pill">Local app</span>
               </div>
               <p class="muted">
-                Enter final scores here after matches finish. The leaderboard recalculates automatically.
+                Enter final scores here after matches finish. The leaderboard
+                recalculates automatically.
               </p>
               <div id="results-admin" class="admin-list"></div>
             </section>
@@ -296,11 +472,18 @@
 
             <section class="panel admin-panel" data-admin-panel="leagues">
               <h2>Leagues</h2>
-              <p class="muted">Create leagues that players can join from the leaderboard.</p>
+              <p class="muted">
+                Create leagues that players can join from the leaderboard.
+              </p>
               <form id="league-admin-form" class="inline-form">
                 <label for="league-name">
                   League name
-                  <input id="league-name" name="league-name" autocomplete="off" required />
+                  <input
+                    id="league-name"
+                    name="league-name"
+                    autocomplete="off"
+                    required
+                  />
                 </label>
                 <button type="submit">Create league</button>
               </form>
@@ -310,7 +493,10 @@
 
             <section class="panel admin-panel" data-admin-panel="users">
               <h2>Users</h2>
-              <p class="muted">Manage player league access or delete users and their saved predictions.</p>
+              <p class="muted">
+                Manage player league access or delete users and their saved
+                predictions.
+              </p>
               <div id="users-admin" class="admin-list"></div>
             </section>
           </section>
@@ -319,7 +505,13 @@
     </main>
 
     <footer class="site-footer">
-      <button class="admin-footer-button" type="button" data-view-target="admin-view">Admin</button>
+      <button
+        class="admin-footer-button"
+        type="button"
+        data-view-target="admin-view"
+      >
+        Admin
+      </button>
     </footer>
 
     <template id="match-row-template">
