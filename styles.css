@@ -1417,6 +1417,18 @@ th {
   justify-content: space-between;
 }
 
+.prediction-panel-actions {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.prediction-panel-actions .prediction-player-picker {
+  min-width: 190px;
+}
+
 .prediction-panel-head .muted {
   font-size: 0.9rem;
 }
@@ -1447,6 +1459,53 @@ th {
   font-weight: 800;
   max-width: 145px;
   padding: 0.45rem 0.55rem;
+}
+
+.tournament-pick-item {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.tournament-pick-player {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tournament-pick-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tournament-pick-grid > div {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.tournament-pick-grid .muted {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.tournament-pick-grid strong {
+  color: var(--accent-dark);
+  font-size: 0.94rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.tournament-predictions-modal-card {
+  max-width: 820px;
+  width: min(820px, calc(100vw - 1.2rem));
+}
+
+.tournament-predictions-modal-note {
+  margin-bottom: 0.85rem;
+  margin-top: -0.2rem;
 }
 
 .model-picker {
@@ -1882,6 +1941,24 @@ th {
   .nav-player {
     order: 0;
     width: 100%;
+  }
+
+  .prediction-panel-actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .prediction-panel-actions .prediction-player-picker,
+  .prediction-panel-actions button {
+    width: 100%;
+  }
+
+  .tournament-pick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tournament-predictions-modal-card {
+    width: calc(100vw - 1rem);
   }
 
   .player-nav-button,

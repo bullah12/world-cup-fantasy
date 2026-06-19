@@ -975,6 +975,18 @@ const els = {
   predictionTotal: document.querySelector("#prediction-total"),
   predictionPlayerSelect: document.querySelector("#prediction-player-select"),
   playerPredictions: document.querySelector("#player-predictions"),
+  tournamentPredictionsToggle: document.querySelector(
+    "#tournament-predictions-toggle",
+  ),
+  tournamentPredictionsModal: document.querySelector(
+    "#tournament-predictions-modal",
+  ),
+  tournamentPredictionsList: document.querySelector(
+    "#tournament-predictions-list",
+  ),
+  tournamentPredictionsClose: document.querySelector(
+    "#tournament-predictions-close",
+  ),
   resultsAdmin: document.querySelector("#results-admin"),
   scoringConfig: document.querySelector("#scoring-config"),
   saveConfig: document.querySelector("#save-config"),
@@ -1005,6 +1017,20 @@ const els = {
 els.predictionPlayerSelect.addEventListener("change", () => {
   viewedPredictionPlayerId = els.predictionPlayerSelect.value;
   renderPlayerPredictions();
+});
+
+els.tournamentPredictionsToggle.addEventListener("click", () => {
+  openTournamentPredictionsModal();
+});
+
+els.tournamentPredictionsClose.addEventListener("click", () => {
+  closeTournamentPredictionsModal();
+});
+
+els.tournamentPredictionsModal.addEventListener("click", (event) => {
+  if (event.target === els.tournamentPredictionsModal) {
+    closeTournamentPredictionsModal();
+  }
 });
 
 els.modelVersionSelect.addEventListener("change", () => {
@@ -3571,6 +3597,57 @@ function renderPlayerPredictions() {
       })
       .join("") ||
     `<p class="muted">This player has not made any predictions yet.</p>`;
+}
+
+function renderTournamentPredictionsOverview() {
+  const players = Object.values(state.players).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  if (!els.tournamentPredictionsList) return;
+
+  const rows = players
+    .map((player) => {
+      const prediction = getTournamentPrediction(player.id) || {};
+      const displayName = escapeHtml(player.name);
+      return `
+        <article class="prediction-item tournament-pick-item">
+          <div class="tournament-pick-player">
+            <strong>${displayName}</strong>
+            <span class="muted">${escapeHtml(player.id)}</span>
+          </div>
+          <div class="tournament-pick-grid">
+            <div>
+              <span class="muted">Most goals</span>
+              <strong>${escapeHtml(prediction.mostGoals || "No pick")}</strong>
+            </div>
+            <div>
+              <span class="muted">Most assists</span>
+              <strong>${escapeHtml(prediction.mostAssists || "No pick")}</strong>
+            </div>
+            <div>
+              <span class="muted">Clean sheets</span>
+              <strong>${escapeHtml(prediction.goldenGlove || "No pick")}</strong>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  els.tournamentPredictionsList.innerHTML =
+    rows || `<p class="muted">No tournament predictions yet.</p>`;
+}
+
+function openTournamentPredictionsModal() {
+  els.tournamentPredictionsModal.hidden = false;
+  els.tournamentPredictionsToggle.setAttribute("aria-expanded", "true");
+  renderTournamentPredictionsOverview();
+}
+
+function closeTournamentPredictionsModal() {
+  els.tournamentPredictionsModal.hidden = true;
+  els.tournamentPredictionsToggle.setAttribute("aria-expanded", "false");
 }
 
 function syncViewedPredictionPlayer() {
