@@ -1760,8 +1760,8 @@ function refreshFromSupabase() {
 function mergeMatchesWithDefaults(rows) {
   const remoteMatches = new Map(rows.map((row) => [row.id, matchFromRow(row)]));
   return MATCHES.map((match) => ({
-    ...(remoteMatches.get(match.id) || {}),
     ...match,
+    ...(remoteMatches.get(match.id) || {}),
   })).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 }
 
