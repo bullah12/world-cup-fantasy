@@ -3497,9 +3497,8 @@ function isTournamentPredictionLocked() {
 }
 
 function getTournamentStartTime() {
-  return Math.min(
-    ...matchesData.map((match) => new Date(match.kickoff).getTime()),
-  );
+  // Lock predictions at midnight UK time on 26 June 2026
+  return new Date("2026-06-26T00:00:00+01:00").getTime();
 }
 
 function leaderboardFormHtml(playerId) {
