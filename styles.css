@@ -1370,6 +1370,25 @@ th {
   margin-bottom: 0.2rem;
 }
 
+.knockout-layout-toggle {
+  background: #e7ede5;
+  border-radius: 8px;
+  display: none;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.knockout-layout-toggle button {
+  background: transparent;
+  color: var(--accent-dark);
+  padding: 0.5rem 0.75rem;
+}
+
+.knockout-layout-toggle button.active {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(23, 32, 24, 0.08);
+}
+
 .knockout-bracket-scroll {
   background:
     linear-gradient(90deg, rgba(13, 122, 85, 0.06), transparent 18%),
@@ -3901,6 +3920,15 @@ td {
     flex-direction: column;
   }
 
+  .knockout-layout-toggle {
+    display: flex;
+    justify-self: stretch;
+  }
+
+  .knockout-layout-toggle button {
+    flex: 1 1 0;
+  }
+
   .knockout-bracket-scroll {
     background: transparent;
     border: 0;
@@ -3926,6 +3954,32 @@ td {
     right: auto;
     top: auto;
     transform: translateX(-50%);
+  }
+
+  .knockout-mobile-bracket .knockout-bracket-scroll {
+    background:
+      linear-gradient(90deg, rgba(13, 122, 85, 0.06), transparent 18%),
+      #f8faf6;
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    padding: 0.7rem;
+  }
+
+  .knockout-mobile-bracket .knockout-bracket {
+    gap: 0.8rem;
+    grid-template-columns: repeat(5, minmax(205px, 1fr));
+    min-width: 1120px;
+  }
+
+  .knockout-mobile-bracket
+    .knockout-round-column:not(:last-child)::after {
+    bottom: auto;
+    content: "›";
+    font-size: 1.35rem;
+    left: auto;
+    right: -0.68rem;
+    top: 0.42rem;
+    transform: none;
   }
 
   .knockout-round-heading,

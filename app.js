@@ -931,6 +931,7 @@ let selectedMatchDateKey = "";
 let adminUnlocked = false;
 let countdownMatchId = "";
 let selectedTeamView = "groups";
+let knockoutMobileLayout = "list";
 let leaderboardScope = DEFAULT_LEAGUE_ID;
 let selectedModelVersion = "";
 let selectedAdminSection = "results";
@@ -1119,6 +1120,13 @@ els.teamsContent.addEventListener("change", (event) => {
     allMatchesGroupFilter = event.target.value;
     renderTeams();
   }
+});
+
+els.teamsContent.addEventListener("click", (event) => {
+  const layoutButton = event.target.closest("[data-knockout-layout]");
+  if (!layoutButton) return;
+  knockoutMobileLayout = layoutButton.dataset.knockoutLayout;
+  renderTeams();
 });
 
 els.adminSectionTabs.forEach((tab) => {
@@ -3273,7 +3281,7 @@ function knockoutTeamsHtml() {
   const thirdPlace = matchesData.find((match) => match.group === "Third Place");
 
   return `
-    <section class="knockout-stage">
+    <section class="knockout-stage knockout-mobile-${escapeHtml(knockoutMobileLayout)}">
       <div class="knockout-stage-head">
         <div>
           <p class="eyebrow">Road to the final</p>
@@ -3281,6 +3289,24 @@ function knockoutTeamsHtml() {
           <p class="muted">Follow each match to see who the winner can face next.</p>
         </div>
         <span class="pill">${knockoutMatches.length} matches</span>
+      </div>
+      <div class="knockout-layout-toggle" role="group" aria-label="Knockout layout">
+        <button
+          type="button"
+          class="${knockoutMobileLayout === "list" ? "active" : ""}"
+          data-knockout-layout="list"
+          aria-pressed="${knockoutMobileLayout === "list"}"
+        >
+          List
+        </button>
+        <button
+          type="button"
+          class="${knockoutMobileLayout === "bracket" ? "active" : ""}"
+          data-knockout-layout="bracket"
+          aria-pressed="${knockoutMobileLayout === "bracket"}"
+        >
+          Bracket
+        </button>
       </div>
       <div class="knockout-bracket-scroll" tabindex="0" aria-label="World Cup knockout bracket">
         <div class="knockout-bracket">
