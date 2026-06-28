@@ -2183,7 +2183,7 @@ function renderMatchRow(match) {
   if (isKnockoutMatch(match)) {
     penaltyField.hidden = false;
     penaltySelect.innerHTML = `
-      <option value="">Select a team</option>
+      <option value="">No penalty pick</option>
       <option value="HOME">${escapeHtml(match.home)}</option>
       <option value="AWAY">${escapeHtml(match.away)}</option>
     `;
@@ -3067,10 +3067,7 @@ async function savePredictionForm(form) {
     matchId,
     homeScore: Number(homeValue),
     awayScore: Number(awayValue),
-    penaltyWinner:
-      Number(homeValue) === Number(awayValue)
-        ? form.penaltyWinner.value
-        : "",
+    penaltyWinner: form.penaltyWinner.value,
     updatedAt: new Date().toISOString(),
   };
 
@@ -3089,19 +3086,8 @@ function updatePenaltyPredictionState(form) {
   const field = form.querySelector(".penalty-prediction");
   if (!match || !field || field.hidden) return;
 
-  const homeValue = form.homeScore.value;
-  const awayValue = form.awayScore.value;
-  const scoresAreLevel =
-    homeValue !== "" &&
-    awayValue !== "" &&
-    Number(homeValue) === Number(awayValue);
   const select = form.penaltyWinner;
-  select.disabled =
-    !activePlayerId || isLocked(match) || !scoresAreLevel;
-
-  if (!scoresAreLevel) {
-    select.value = "";
-  }
+  select.disabled = !activePlayerId || isLocked(match);
 }
 
 function savedPredictionMessage(match, prediction) {

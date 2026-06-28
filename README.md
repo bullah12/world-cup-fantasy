@@ -20,7 +20,7 @@ Then visit `http://localhost:5173`.
 - Predict match scores until the configurable lock window before kick-off.
 - Next-match summary plus a day-by-day match selector from 1 June 2026 through 31 August 2026.
 - Predictions autosave after both score boxes are filled.
-- Knockout predictions can include a penalty-shootout winner when the predicted score is level.
+- Knockout predictions can include an independent penalty-shootout winner pick, regardless of the predicted scoreline.
 - Players, predictions, results, matches, and settings are stored in Supabase for shared multi-device use.
 - Match days show fixtures even after results have been entered; prediction editing is controlled by the lock window.
 - Leaderboard with total points, correct predictions, and five-match form indicators.
