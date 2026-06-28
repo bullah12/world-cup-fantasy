@@ -3343,14 +3343,19 @@ function knockoutRoundColumnHtml(round, matches, roundIndex) {
       </div>
       <div class="knockout-round-matches">
         ${matches
-          .map((match) => knockoutMatchCardHtml(match, true))
+          .map((match, matchIndex) =>
+            knockoutMatchCardHtml(match, true, {
+              roundIndex,
+              matchIndex,
+            }),
+          )
           .join("")}
       </div>
     </section>
   `;
 }
 
-function knockoutMatchCardHtml(match, showRoute) {
+function knockoutMatchCardHtml(match, showRoute, bracketPosition = null) {
   const result = state.results[match.id];
   const winner = getKnockoutMatchWinner(match);
   const resolvedHome = resolveLiveKnockoutSlot(match.home);
@@ -3374,9 +3379,23 @@ function knockoutMatchCardHtml(match, showRoute) {
       : winner
         ? `Third place: ${winner}`
         : "Third place decided here";
+  const bracketRow = bracketPosition
+    ? 2 ** bracketPosition.roundIndex +
+      bracketPosition.matchIndex * 2 ** (bracketPosition.roundIndex + 1)
+    : 1;
+  const connectorHeight = bracketPosition
+    ? 2 ** (bracketPosition.roundIndex + 1) * 90
+    : 0;
+  const showConnector =
+    bracketPosition &&
+    bracketPosition.roundIndex < 4 &&
+    bracketPosition.matchIndex % 2 === 0;
 
   return `
-    <article class="knockout-match-card${result ? " has-result" : ""}">
+    <article
+      class="knockout-match-card${result ? " has-result" : ""}"
+      style="--bracket-row: ${bracketRow}; --connector-height: ${connectorHeight}px"
+    >
       <div class="knockout-match-head">
         <strong>${escapeHtml(match.id)}</strong>
         <time datetime="${escapeHtml(match.kickoff)}">${formatShortDate(new Date(match.kickoff))} · ${formatTime(new Date(match.kickoff))}</time>
@@ -3396,9 +3415,10 @@ function knockoutMatchCardHtml(match, showRoute) {
         ${
           nextMatch
             ? `<strong aria-label="Winner advances to ${escapeHtml(nextMatch.id)}">→ ${escapeHtml(nextMatch.id)}</strong>`
-            : ""
+          : ""
         }
       </div>
+      ${showConnector ? `<span class="knockout-connector" aria-hidden="true"></span>` : ""}
     </article>
   `;
 }
