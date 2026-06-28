@@ -3827,15 +3827,11 @@ function renderPlayerPredictions() {
       return { match, prediction, result, score };
     })
     .filter((item) => item.prediction)
-    .sort((a, b) => {
-      const aTime = new Date(
-        a.prediction.updatedAt || a.match.kickoff,
-      ).getTime();
-      const bTime = new Date(
-        b.prediction.updatedAt || b.match.kickoff,
-      ).getTime();
-      return bTime - aTime;
-    });
+    .sort(
+      (a, b) =>
+        new Date(b.match.kickoff).getTime() -
+        new Date(a.match.kickoff).getTime(),
+    );
 
   const stats = calculatePlayerStats(player.id);
   els.predictionTotal.textContent = stats.points;
