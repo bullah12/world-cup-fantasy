@@ -4,6 +4,7 @@ const DEFAULT_CONFIG = {
     exactScore: 5,
     correctOutcome: 2,
     correctTeamGoalsBonus: 1,
+    penaltyWinnerBonus: 2,
   },
 };
 
@@ -609,128 +610,128 @@ const MATCHES = [
   {
     id: "M073",
     group: "Round of 32",
-    home: "Group A Runner-up",
-    away: "Group B Runner-up",
+    home: "Canada",
+    away: "South Africa",
     kickoff: "2026-06-28T15:00:00-04:00",
     venue: "SoFi Stadium, Los Angeles",
   },
   {
     id: "M074",
     group: "Round of 32",
-    home: "Group E Winner",
-    away: "Group A/B/C/D/F 3rd Place",
+    home: "Germany",
+    away: "Paraguay",
     kickoff: "2026-06-29T16:30:00-04:00",
     venue: "Gillette Stadium, Boston",
   },
   {
     id: "M075",
     group: "Round of 32",
-    home: "Group F Winner",
-    away: "Group C Runner-up",
+    home: "Netherlands",
+    away: "Morocco",
     kickoff: "2026-06-29T21:00:00-04:00",
     venue: "Estadio BBVA, Monterrey, Mexico",
   },
   {
     id: "M076",
     group: "Round of 32",
-    home: "Group C Winner",
-    away: "Group F Runner-up",
+    home: "Brazil",
+    away: "Japan",
     kickoff: "2026-06-29T13:00:00-04:00",
     venue: "NRG Stadium, Houston",
   },
   {
     id: "M077",
     group: "Round of 32",
-    home: "Group I Winner",
-    away: "Group C/D/F/G/H 3rd Place",
+    home: "France",
+    away: "Sweden",
     kickoff: "2026-06-30T17:00:00-04:00",
     venue: "MetLife Stadium, New York/New Jersey",
   },
   {
     id: "M078",
     group: "Round of 32",
-    home: "Group E Runner-up",
-    away: "Group I Runner-up",
+    home: "Côte d’Ivoire",
+    away: "Norway",
     kickoff: "2026-06-30T13:00:00-04:00",
     venue: "AT&T Stadium, Dallas",
   },
   {
     id: "M079",
     group: "Round of 32",
-    home: "Group A Winner",
-    away: "Group C/E/F/H/I 3rd Place",
+    home: "Mexico",
+    away: "Ecuador",
     kickoff: "2026-06-30T21:00:00-04:00",
     venue: "Estadio Azteca, Mexico City, Mexico",
   },
   {
     id: "M080",
     group: "Round of 32",
-    home: "Group L Winner",
-    away: "Group E/H/I/J/K 3rd Place",
+    home: "England",
+    away: "Congo DR",
     kickoff: "2026-07-01T12:00:00-04:00",
     venue: "Mercedes-Benz Stadium, Atlanta",
   },
   {
     id: "M081",
     group: "Round of 32",
-    home: "Group D Winner",
-    away: "Group B/E/F/I/J 3rd Place",
+    home: "United States",
+    away: "Bosnia and Herzegovina",
     kickoff: "2026-07-01T20:00:00-04:00",
     venue: "Levi's Stadium, San Francisco Bay Area",
   },
   {
     id: "M082",
     group: "Round of 32",
-    home: "Group G Winner",
-    away: "Group A/E/H/I/J 3rd Place",
+    home: "Belgium",
+    away: "Senegal",
     kickoff: "2026-07-01T16:00:00-04:00",
     venue: "Lumen Field, Seattle",
   },
   {
     id: "M083",
     group: "Round of 32",
-    home: "Group K Runner-up",
-    away: "Group L Runner-up",
+    home: "Portugal",
+    away: "Croatia",
     kickoff: "2026-07-02T19:00:00-04:00",
     venue: "BMO Field, Toronto, Canada",
   },
   {
     id: "M084",
     group: "Round of 32",
-    home: "Group H Winner",
-    away: "Group J Runner-up",
+    home: "Spain",
+    away: "Austria",
     kickoff: "2026-07-02T15:00:00-04:00",
     venue: "SoFi Stadium, Los Angeles",
   },
   {
     id: "M085",
     group: "Round of 32",
-    home: "Group B Winner",
-    away: "Group E/F/G/I/J 3rd Place",
+    home: "Switzerland",
+    away: "Algeria",
     kickoff: "2026-07-02T23:00:00-04:00",
     venue: "BC Place, Vancouver, Canada",
   },
   {
     id: "M086",
     group: "Round of 32",
-    home: "Group J Winner",
-    away: "Group H Runner-up",
+    home: "Argentina",
+    away: "Cabo Verde",
     kickoff: "2026-07-03T18:00:00-04:00",
     venue: "Hard Rock Stadium, Miami",
   },
   {
     id: "M087",
     group: "Round of 32",
-    home: "Group K Winner",
-    away: "Group D/E/I/J/L 3rd Place",
+    home: "Colombia",
+    away: "Ghana",
     kickoff: "2026-07-03T21:30:00-04:00",
     venue: "Arrowhead Stadium, Kansas City",
   },
   {
     id: "M088",
     group: "Round of 32",
-    home: "Group D Runner-up",
-    away: "Group G Runner-up",
+    home: "Australia",
+    away: "Egypt",
     kickoff: "2026-07-03T14:00:00-04:00",
     venue: "AT&T Stadium, Dallas",
   },
@@ -1463,6 +1464,7 @@ async function loadSupabaseState() {
         matchId: prediction.match_id,
         homeScore: prediction.home_score,
         awayScore: prediction.away_score,
+        penaltyWinner: prediction.penalty_winner || "",
         updatedAt: prediction.updated_at,
       },
     ]),
@@ -1489,6 +1491,7 @@ async function loadSupabaseState() {
         matchId: result.match_id,
         homeScore: result.home_score,
         awayScore: result.away_score,
+        penaltyWinner: result.penalty_winner || "",
         updatedAt: result.updated_at,
       },
     ]),
@@ -1638,6 +1641,7 @@ async function savePrediction(prediction) {
     match_id: prediction.matchId,
     home_score: prediction.homeScore,
     away_score: prediction.awayScore,
+    penalty_winner: prediction.penaltyWinner || null,
     updated_at: prediction.updatedAt,
   });
   await savePredictionHistory({
@@ -1660,6 +1664,7 @@ async function deletePrediction(playerId, matchId) {
     matchId,
     homeScore: null,
     awayScore: null,
+    penaltyWinner: null,
     updatedAt: deletedAt,
     action: "clear",
   });
@@ -1699,6 +1704,7 @@ async function savePredictionHistory(prediction) {
     match_id: prediction.matchId,
     home_score: prediction.homeScore,
     away_score: prediction.awayScore,
+    penalty_winner: prediction.penaltyWinner || null,
     action: prediction.action,
     created_at: prediction.updatedAt,
   });
@@ -1716,6 +1722,7 @@ async function saveResult(result) {
     match_id: result.matchId,
     home_score: result.homeScore,
     away_score: result.awayScore,
+    penalty_winner: result.penaltyWinner || null,
     updated_at: result.updatedAt,
   });
 }
@@ -2170,6 +2177,20 @@ function renderMatchRow(match) {
   form.awayScore.value = prediction ? prediction.awayScore : "";
   form.homeScore.disabled = locked || !activePlayerId;
   form.awayScore.disabled = locked || !activePlayerId;
+
+  const penaltyField = form.querySelector(".penalty-prediction");
+  const penaltySelect = form.penaltyWinner;
+  if (isKnockoutMatch(match)) {
+    penaltyField.hidden = false;
+    penaltySelect.innerHTML = `
+      <option value="">Select a team</option>
+      <option value="HOME">${escapeHtml(match.home)}</option>
+      <option value="AWAY">${escapeHtml(match.away)}</option>
+    `;
+    penaltySelect.value = prediction?.penaltyWinner || "";
+  }
+  updatePenaltyPredictionState(form);
+
   form.addEventListener("submit", (event) => event.preventDefault());
   form.addEventListener("input", handlePredictionInput);
 
@@ -2180,7 +2201,7 @@ function renderMatchRow(match) {
   } else if (locked) {
     lockMessage.textContent = "Predictions are locked for this match.";
   } else if (prediction) {
-    lockMessage.textContent = `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`;
+    lockMessage.textContent = savedPredictionMessage(match, prediction);
   } else {
     lockMessage.textContent = `Locks ${state.config.lockMinutesBeforeKickoff} minutes before kick-off.`;
   }
@@ -3012,6 +3033,7 @@ function handlePredictionInput(event) {
   const match = matchesData.find((item) => item.id === matchId);
   if (!activePlayerId || !match || isLocked(match)) return;
 
+  updatePenaltyPredictionState(form);
   clearTimeout(form.saveTimer);
   updateAutosaveMessage(form, "Saving...");
   form.saveTimer = setTimeout(() => {
@@ -3045,6 +3067,10 @@ async function savePredictionForm(form) {
     matchId,
     homeScore: Number(homeValue),
     awayScore: Number(awayValue),
+    penaltyWinner:
+      Number(homeValue) === Number(awayValue)
+        ? form.penaltyWinner.value
+        : "",
     updatedAt: new Date().toISOString(),
   };
 
@@ -3053,9 +3079,35 @@ async function savePredictionForm(form) {
   saveState();
   updateAutosaveMessage(
     form,
-    `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}`,
+    savedPredictionMessage(match, prediction),
   );
   renderPlayerPredictions();
+}
+
+function updatePenaltyPredictionState(form) {
+  const match = matchesData.find((item) => item.id === form.dataset.matchId);
+  const field = form.querySelector(".penalty-prediction");
+  if (!match || !field || field.hidden) return;
+
+  const homeValue = form.homeScore.value;
+  const awayValue = form.awayScore.value;
+  const scoresAreLevel =
+    homeValue !== "" &&
+    awayValue !== "" &&
+    Number(homeValue) === Number(awayValue);
+  const select = form.penaltyWinner;
+  select.disabled =
+    !activePlayerId || isLocked(match) || !scoresAreLevel;
+
+  if (!scoresAreLevel) {
+    select.value = "";
+  }
+}
+
+function savedPredictionMessage(match, prediction) {
+  const penaltyTeam = penaltyWinnerTeam(match, prediction.penaltyWinner);
+  const penaltyText = penaltyTeam ? `, ${penaltyTeam} on penalties` : "";
+  return `Saved prediction: ${prediction.homeScore}-${prediction.awayScore}${penaltyText}`;
 }
 
 function updateAutosaveMessage(form, message) {
@@ -3383,7 +3435,7 @@ function renderPointsBreakdown() {
     [
       "Perfect score",
       state.config.points.exactScore,
-      "Exact scoreline. This replaces all other bonuses.",
+      "Exact scoreline. Penalty winner points can still be added.",
     ],
     [
       "Correct result",
@@ -3394,6 +3446,11 @@ function renderPointsBreakdown() {
       "Team goals",
       state.config.points.correctTeamGoalsBonus,
       "One team's goals exactly right.",
+    ],
+    [
+      "Penalty winner",
+      state.config.points.penaltyWinnerBonus,
+      "Correct team to win a penalty shootout.",
     ],
   ];
 
@@ -3569,6 +3626,10 @@ function renderPlayerPredictions() {
     predictions
       .map(({ match, prediction, result, score }) => {
         const status = getPredictionStatus(score);
+        const predictedPenaltyTeam = penaltyWinnerTeam(
+          match,
+          prediction.penaltyWinner,
+        );
         const details = result
           ? predictionBreakdownHtml(match, result, score)
           : `<strong>Result pending</strong><span>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</span>`;
@@ -3586,6 +3647,11 @@ function renderPlayerPredictions() {
               ${teamHtml(match.away)}
             </strong>
             <span>${escapeHtml(match.group)}</span>
+            ${
+              predictedPenaltyTeam
+                ? `<span class="prediction-penalty">Penalties: ${escapeHtml(predictedPenaltyTeam)}</span>`
+                : ""
+            }
           </div>
           <button class="prediction-status ${status.className}" type="button" aria-label="${escapeHtml(detailsLabel)}" aria-expanded="false">
             <span>${status.pointsText}</span>
@@ -3714,8 +3780,10 @@ function predictionBreakdownHtml(match, result, score) {
         .join("")
     : `<span>No points <strong>0</strong></span>`;
 
+  const penaltyTeam = penaltyWinnerTeam(match, result.penaltyWinner);
   return `
     <strong>Result: ${teamFlagHtml(match.home)} ${result.homeScore}-${result.awayScore} ${teamFlagHtml(match.away)}</strong>
+    ${penaltyTeam ? `<span>${escapeHtml(penaltyTeam)} won on penalties</span>` : ""}
     ${rows}
     <span>Total <strong>${score.points}</strong></span>
   `;
@@ -3731,8 +3799,10 @@ function leaderboardBreakdownHtml(match, result, score) {
         .join("")
     : `<span>No points <strong>0</strong></span>`;
 
+  const penaltyTeam = penaltyWinnerTeam(match, result.penaltyWinner);
   return `
     <strong>${teamFlagHtml(match.home)} ${result.homeScore}-${result.awayScore} ${teamFlagHtml(match.away)}</strong>
+    ${penaltyTeam ? `<span>${escapeHtml(penaltyTeam)} won on penalties</span>` : ""}
     ${rows}
     <span>Total <strong>${score.points}</strong></span>
   `;
@@ -3748,8 +3818,9 @@ function renderResultsAdmin() {
   els.resultsAdmin.innerHTML = matchesData
     .map((match) => {
       const result = state.results[match.id] || {};
+      const showPenaltyWinner = isKnockoutMatch(match);
       return `
-      <form class="admin-row" data-match-id="${match.id}">
+      <form class="admin-row${showPenaltyWinner ? " has-penalty-winner" : ""}" data-match-id="${match.id}">
         <div class="admin-match-meta">
           <strong>${escapeHtml(match.id)}</strong>
           <p class="muted">${escapeHtml(match.group)} - ${formatDate(new Date(match.kickoff))}</p>
@@ -3762,6 +3833,20 @@ function renderResultsAdmin() {
           ${teamHtml(match.away, { className: "admin-team-name mobile-tooltip-trigger", tooltip: true })}
           <input type="number" min="0" max="30" name="awayScore" value="${result.awayScore ?? ""}" />
         </label>
+        ${
+          showPenaltyWinner
+            ? `
+          <label class="admin-penalty-winner">
+            Winner on penalties
+            <select name="penaltyWinner">
+              <option value="">No shootout</option>
+              <option value="HOME" ${result.penaltyWinner === "HOME" ? "selected" : ""}>${escapeHtml(match.home)}</option>
+              <option value="AWAY" ${result.penaltyWinner === "AWAY" ? "selected" : ""}>${escapeHtml(match.away)}</option>
+            </select>
+          </label>
+        `
+            : ""
+        }
         <p class="admin-save-status muted" aria-live="polite">${result.matchId ? "Saved" : "Enter score"}</p>
       </form>
     `;
@@ -3771,12 +3856,14 @@ function renderResultsAdmin() {
   els.resultsAdmin.querySelectorAll("form").forEach((form) => {
     form.addEventListener("submit", (event) => event.preventDefault());
     form.addEventListener("input", handleAdminResultInput);
+    updateAdminPenaltyState(form);
   });
 }
 
 function handleAdminResultInput(event) {
   const form = event.currentTarget;
   const status = form.querySelector(".admin-save-status");
+  updateAdminPenaltyState(form);
   clearTimeout(form.saveTimer);
   status.textContent = "Saving...";
   form.saveTimer = setTimeout(() => {
@@ -3785,6 +3872,18 @@ function handleAdminResultInput(event) {
       status.textContent = "Save failed";
     });
   }, SCORE_SAVE_DEBOUNCE_MS);
+}
+
+function updateAdminPenaltyState(form) {
+  const select = form.penaltyWinner;
+  if (!select) return;
+
+  const scoresAreLevel =
+    form.homeScore.value !== "" &&
+    form.awayScore.value !== "" &&
+    Number(form.homeScore.value) === Number(form.awayScore.value);
+  select.disabled = !scoresAreLevel;
+  if (!scoresAreLevel) select.value = "";
 }
 
 async function saveAdminResultForm(form) {
@@ -3819,6 +3918,10 @@ async function saveAdminResultForm(form) {
     matchId,
     homeScore,
     awayScore,
+    penaltyWinner:
+      homeScore === awayScore && form.penaltyWinner
+        ? form.penaltyWinner.value
+        : "",
     updatedAt: new Date().toISOString(),
   };
   state.results[matchId] = result;
@@ -4051,6 +4154,9 @@ function scorePrediction(prediction, result) {
   const correctTeamGoals =
     prediction.homeScore === result.homeScore ||
     prediction.awayScore === result.awayScore;
+  const correctPenaltyWinner =
+    Boolean(result.penaltyWinner) &&
+    prediction.penaltyWinner === result.penaltyWinner;
 
   let points = 0;
   const breakdown = [];
@@ -4061,31 +4167,54 @@ function scorePrediction(prediction, result) {
       label: "Perfect score",
       points: state.config.points.exactScore,
     });
-    return { points, exactScore, correctOutcome, breakdown };
+  } else {
+    if (correctOutcome) {
+      points += state.config.points.correctOutcome;
+      breakdown.push({
+        label: "Correct result",
+        points: state.config.points.correctOutcome,
+      });
+    }
+    if (correctTeamGoals) {
+      points += state.config.points.correctTeamGoalsBonus;
+      breakdown.push({
+        label: "Team goals",
+        points: state.config.points.correctTeamGoalsBonus,
+      });
+    }
   }
 
-  if (correctOutcome) {
-    points += state.config.points.correctOutcome;
+  if (correctPenaltyWinner) {
+    points += state.config.points.penaltyWinnerBonus;
     breakdown.push({
-      label: "Correct result",
-      points: state.config.points.correctOutcome,
-    });
-  }
-  if (correctTeamGoals) {
-    points += state.config.points.correctTeamGoalsBonus;
-    breakdown.push({
-      label: "Team goals",
-      points: state.config.points.correctTeamGoalsBonus,
+      label: "Penalty winner",
+      points: state.config.points.penaltyWinnerBonus,
     });
   }
 
-  return { points, exactScore, correctOutcome, breakdown };
+  return {
+    points,
+    exactScore,
+    correctOutcome,
+    correctPenaltyWinner,
+    breakdown,
+  };
 }
 
 function outcome(homeScore, awayScore) {
   if (homeScore > awayScore) return "HOME";
   if (homeScore < awayScore) return "AWAY";
   return "DRAW";
+}
+
+function isKnockoutMatch(match) {
+  return Boolean(match) && !/^Group [A-L]$/.test(match.group);
+}
+
+function penaltyWinnerTeam(match, penaltyWinner) {
+  if (penaltyWinner === "HOME") return match.home;
+  if (penaltyWinner === "AWAY") return match.away;
+  return "";
 }
 
 function isLocked(match) {

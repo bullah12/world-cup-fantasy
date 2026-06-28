@@ -750,6 +750,32 @@ h3 {
   text-align: center;
 }
 
+.penalty-prediction {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+
+.penalty-prediction[hidden] {
+  display: none;
+}
+
+.penalty-prediction select {
+  max-width: 240px;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+}
+
+.penalty-prediction select:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .team {
   color: var(--ink);
   align-items: center;
@@ -1608,6 +1634,10 @@ th {
   font-weight: 800;
 }
 
+.prediction-fixture .prediction-penalty {
+  color: var(--accent-dark);
+}
+
 .prediction-status {
   align-items: center;
   border: 2px solid transparent;
@@ -1708,6 +1738,10 @@ th {
   align-items: end;
 }
 
+.admin-row.has-penalty-winner {
+  grid-template-columns: minmax(0, 1fr) 80px 80px minmax(150px, 0.65fr) 92px;
+}
+
 .user-admin-row {
   align-items: center;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1753,6 +1787,14 @@ th {
 
 .admin-score-label input {
   grid-column: 1 / -1;
+}
+
+.admin-penalty-winner {
+  min-width: 0;
+}
+
+.admin-penalty-winner select {
+  width: 100%;
 }
 
 .admin-team-name {
@@ -3539,6 +3581,19 @@ td {
 
   .prediction-form input {
     min-height: 42px;
+  }
+
+  .penalty-prediction {
+    align-items: stretch;
+    flex-direction: column;
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .penalty-prediction select {
+    max-width: none;
+    min-height: 42px;
+    width: 100%;
   }
 
   .team {

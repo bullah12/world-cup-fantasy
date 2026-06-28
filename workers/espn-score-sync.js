@@ -1,7 +1,7 @@
 const ESPN_SCOREBOARD_URL =
   "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
 const DEFAULT_SYNC_START_MINUTES_BEFORE = 5;
-const DEFAULT_SYNC_STOP_MINUTES_AFTER = 150;
+const DEFAULT_SYNC_STOP_MINUTES_AFTER = 210;
 
 const TEAM_ALIASES = {
   "bosnia herzegovina": "bosnia and herzegovina",
@@ -99,13 +99,14 @@ async function syncScores(env) {
   for (const update of updates) {
     const current = await fetchSupabase(
       env,
-      `/rest/v1/results?match_id=eq.${encodeURIComponent(update.match_id)}&select=match_id,home_score,away_score`,
+      `/rest/v1/results?match_id=eq.${encodeURIComponent(update.match_id)}&select=match_id,home_score,away_score,penalty_winner`,
     );
     const existing = current[0];
     if (
       existing &&
       Number(existing.home_score) === update.home_score &&
-      Number(existing.away_score) === update.away_score
+      Number(existing.away_score) === update.away_score &&
+      (existing.penalty_winner || "") === (update.penalty_winner || "")
     ) {
       continue;
     }
@@ -290,18 +291,37 @@ function mapEspnEventToResult(event, matches) {
   const awayScore = Number(away.score);
   if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return null;
 
-  const match = findMatchingMatch(
+  const mapping = findMatchMapping(
     matches,
     getEspnTeamNames(home),
     getEspnTeamNames(away),
     competition?.date || event.date,
   );
-  if (!match) return null;
+  if (!mapping) return null;
+
+  const { match, reversed } = mapping;
+  const penaltyWinner = getPenaltyWinner(
+    home,
+    away,
+    homeScore,
+    awayScore,
+    state,
+  );
 
   return {
     match_id: match.id,
-    home_score: homeScore,
-    away_score: awayScore,
+    home_score: reversed ? awayScore : homeScore,
+    away_score: reversed ? homeScore : awayScore,
+    penalty_winner:
+      penaltyWinner === "HOME"
+        ? reversed
+          ? "AWAY"
+          : "HOME"
+        : penaltyWinner === "AWAY"
+          ? reversed
+            ? "HOME"
+            : "AWAY"
+          : null,
     updated_at: new Date().toISOString(),
     espn_event_id: event.id,
     espn_status: competition?.status?.type?.description || "",
@@ -309,9 +329,13 @@ function mapEspnEventToResult(event, matches) {
 }
 
 function findMatchingMatch(matches, homeNames, awayNames, espnDate) {
+  return findMatchMapping(matches, homeNames, awayNames, espnDate)?.match || null;
+}
+
+function findMatchMapping(matches, homeNames, awayNames, espnDate) {
   const kickoff = espnDate ? new Date(espnDate).getTime() : null;
 
-  return matches.find((match) => {
+  for (const match of matches) {
     const homeMatches = homeNames.some((name) => sameTeam(name, match.home_team));
     const awayMatches = awayNames.some((name) => sameTeam(name, match.away_team));
     const reversedHomeMatches = homeNames.some((name) =>
@@ -320,15 +344,35 @@ function findMatchingMatch(matches, homeNames, awayNames, espnDate) {
     const reversedAwayMatches = awayNames.some((name) =>
       sameTeam(name, match.home_team),
     );
-    const teamsMatch =
-      (homeMatches && awayMatches) || (reversedHomeMatches && reversedAwayMatches);
-    if (!teamsMatch) return false;
-    if (!Number.isFinite(kickoff)) return true;
+    const direct = homeMatches && awayMatches;
+    const reversed = reversedHomeMatches && reversedAwayMatches;
+    if (!direct && !reversed) continue;
+    if (!Number.isFinite(kickoff)) return { match, reversed: !direct && reversed };
 
     const localKickoff = new Date(match.kickoff).getTime();
     const diffHours = Math.abs(localKickoff - kickoff) / 36e5;
-    return diffHours <= 36;
-  });
+    if (diffHours <= 36) return { match, reversed: !direct && reversed };
+  }
+
+  return null;
+}
+
+function getPenaltyWinner(home, away, homeScore, awayScore, state) {
+  if (state !== "post" || homeScore !== awayScore) return "";
+
+  const homeShootoutScore = Number(home.shootoutScore);
+  const awayShootoutScore = Number(away.shootoutScore);
+  if (
+    Number.isFinite(homeShootoutScore) &&
+    Number.isFinite(awayShootoutScore) &&
+    homeShootoutScore !== awayShootoutScore
+  ) {
+    return homeShootoutScore > awayShootoutScore ? "HOME" : "AWAY";
+  }
+
+  if (home.winner === true && away.winner !== true) return "HOME";
+  if (away.winner === true && home.winner !== true) return "AWAY";
+  return "";
 }
 
 function getEspnTeamNames(competitor) {
@@ -376,6 +420,7 @@ async function upsertResult(env, result) {
     match_id: result.match_id,
     home_score: result.home_score,
     away_score: result.away_score,
+    penalty_winner: result.penalty_winner,
     updated_at: result.updated_at,
   };
 

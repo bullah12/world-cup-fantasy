@@ -20,6 +20,7 @@ Then visit `http://localhost:5173`.
 - Predict match scores until the configurable lock window before kick-off.
 - Next-match summary plus a day-by-day match selector from 1 June 2026 through 31 August 2026.
 - Predictions autosave after both score boxes are filled.
+- Knockout predictions can include a penalty-shootout winner when the predicted score is level.
 - Players, predictions, results, matches, and settings are stored in Supabase for shared multi-device use.
 - Match days show fixtures even after results have been entered; prediction editing is controlled by the lock window.
 - Leaderboard with total points, correct predictions, and five-match form indicators.
@@ -33,7 +34,7 @@ The app is deliberately parameterised in `app.js`.
 
 - `DEFAULT_CONFIG.lockMinutesBeforeKickoff` controls the prediction cutoff.
 - `DEFAULT_CONFIG.points` controls the scoring system.
-- Exact score is treated as a fixed score and does not stack with other scoring bonuses.
+- Exact score is treated as a fixed score; the separate penalty-winner bonus can still be added.
 - `SUPABASE_URL` and `SUPABASE_ANON_KEY` control the shared database connection.
 - `MATCHES` controls fixtures, kick-off times, venues, and labels.
 - `TEAM_FLAG_CODES` maps team names to real SVG flags from `flagcdn.com`.
@@ -55,6 +56,8 @@ The seeded fixtures use the full 104-match CSV schedule downloaded with `kaggleh
 
 `workers/espn-score-sync.js` is a Cloudflare Worker that polls ESPN's public FIFA World Cup scoreboard and upserts changed scores into the Supabase `results` table. Supabase realtime then refreshes the app and leaderboard.
 
+Before deploying the knockout update, run `supabase-knockout-penalties.sql` in the Supabase SQL editor. It adds the penalty-winner fields, sets the 2-point bonus, and replaces the Round of 32 placeholders with the confirmed teams.
+
 This is intentionally server-side because it uses the Supabase service role key. Never put `SUPABASE_SERVICE_ROLE_KEY` in `app.js` or any browser code.
 
 Setup:
@@ -67,7 +70,7 @@ wrangler secret put SCORE_SYNC_TOKEN --config wrangler.score-sync.toml
 wrangler deploy --config wrangler.score-sync.toml
 ```
 
-The sample cron runs every minute during the tournament dates. Each run checks ESPN's scoreboard for today, plus nearby dates for any Supabase match inside the live score sync window. By default, that window starts 5 minutes before kick-off and ends 150 minutes after kick-off.
+The sample cron runs every minute during the tournament dates. Each run checks ESPN's scoreboard for today, plus nearby dates for any Supabase match inside the live score sync window. By default, that window starts 5 minutes before kick-off and ends 210 minutes after kick-off so extra time and shootouts are covered.
 
 ```toml
 [triggers]
@@ -79,7 +82,7 @@ Optional Worker variables can adjust that window:
 ```toml
 [vars]
 SCORE_SYNC_START_MINUTES_BEFORE = "5"
-SCORE_SYNC_STOP_MINUTES_AFTER = "150"
+SCORE_SYNC_STOP_MINUTES_AFTER = "210"
 ```
 
 You can also trigger it manually:

@@ -12,4 +12,4 @@ crons = ["* * * * *"]
 
 # Optional variables:
 # SCORE_SYNC_START_MINUTES_BEFORE = "5"
-# SCORE_SYNC_STOP_MINUTES_AFTER = "150"
+# SCORE_SYNC_STOP_MINUTES_AFTER = "210"
