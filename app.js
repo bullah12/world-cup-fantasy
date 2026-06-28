@@ -3276,8 +3276,7 @@ function knockoutTeamsHtml() {
   const knockoutMatches = [...matchesData]
     .filter((match) => roundOrder.includes(match.group))
     .sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
-  const rounds = new Map(roundOrder.map((round) => [round, []]));
-  knockoutMatches.forEach((match) => rounds.get(match.group).push(match));
+  const rounds = buildOrderedKnockoutRounds(roundOrder, knockoutMatches);
   const thirdPlace = matchesData.find((match) => match.group === "Third Place");
 
   return `
@@ -3332,6 +3331,47 @@ function knockoutTeamsHtml() {
       }
     </section>
   `;
+}
+
+function buildOrderedKnockoutRounds(roundOrder, knockoutMatches) {
+  const liveMatchesById = new Map(
+    knockoutMatches.map((match) => [match.id, match]),
+  );
+  const canonicalMatchesById = new Map(
+    MATCHES.map((match) => [match.id, match]),
+  );
+  const rounds = new Map(roundOrder.map((round) => [round, []]));
+  const final = knockoutMatches.find((match) => match.group === "Final");
+
+  if (!final) {
+    knockoutMatches.forEach((match) => rounds.get(match.group)?.push(match));
+    return rounds;
+  }
+
+  let currentRoundMatches = [final];
+  rounds.set("Final", currentRoundMatches);
+
+  for (let index = roundOrder.length - 2; index >= 0; index -= 1) {
+    const round = roundOrder[index];
+    const sourceMatches = currentRoundMatches.flatMap((nextMatch) => {
+      const canonicalMatch = canonicalMatchesById.get(nextMatch.id);
+      if (!canonicalMatch) return [];
+      return [canonicalMatch.home, canonicalMatch.away]
+        .map(knockoutSourceLabel)
+        .filter((source) => source?.type === "Winner")
+        .map((source) => liveMatchesById.get(source.matchId))
+        .filter(Boolean);
+    });
+
+    const seen = new Set(sourceMatches.map((match) => match.id));
+    const unmatched = knockoutMatches
+      .filter((match) => match.group === round && !seen.has(match.id))
+      .sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
+    currentRoundMatches = [...sourceMatches, ...unmatched];
+    rounds.set(round, currentRoundMatches);
+  }
+
+  return rounds;
 }
 
 function knockoutRoundColumnHtml(round, matches, roundIndex) {
