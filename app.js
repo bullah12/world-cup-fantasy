@@ -3826,7 +3826,16 @@ function renderPlayerPredictions() {
         prediction && result ? scorePrediction(prediction, result) : null;
       return { match, prediction, result, score };
     })
-    .filter((item) => item.prediction);
+    .filter((item) => item.prediction)
+    .sort((a, b) => {
+      const aTime = new Date(
+        a.prediction.updatedAt || a.match.kickoff,
+      ).getTime();
+      const bTime = new Date(
+        b.prediction.updatedAt || b.match.kickoff,
+      ).getTime();
+      return bTime - aTime;
+    });
 
   const stats = calculatePlayerStats(player.id);
   els.predictionTotal.textContent = stats.points;
