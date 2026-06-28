@@ -3258,13 +3258,236 @@ function groupStageTeamsHtml() {
 }
 
 function knockoutTeamsHtml() {
+  const roundOrder = [
+    "Round of 32",
+    "Round of 16",
+    "Quarter-finals",
+    "Semi-finals",
+    "Final",
+  ];
+  const knockoutMatches = [...matchesData]
+    .filter((match) => roundOrder.includes(match.group))
+    .sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
+  const rounds = new Map(roundOrder.map((round) => [round, []]));
+  knockoutMatches.forEach((match) => rounds.get(match.group).push(match));
+  const thirdPlace = matchesData.find((match) => match.group === "Third Place");
+
   return `
-    <section class="knockout-empty">
-      <p class="eyebrow">Knockout stage</p>
-      <h3>Knockout teams will appear here later.</h3>
-      <p class="muted">This view will be filled once the tournament has officially started and the qualified teams are known.</p>
+    <section class="knockout-stage">
+      <div class="knockout-stage-head">
+        <div>
+          <p class="eyebrow">Road to the final</p>
+          <h3>Knockout bracket</h3>
+          <p class="muted">Follow each match to see who the winner can face next.</p>
+        </div>
+        <span class="pill">${knockoutMatches.length} matches</span>
+      </div>
+      <div class="knockout-bracket-scroll" tabindex="0" aria-label="World Cup knockout bracket">
+        <div class="knockout-bracket">
+          ${[...rounds.entries()]
+            .map(([round, matches], index) =>
+              knockoutRoundColumnHtml(round, matches, index),
+            )
+            .join("")}
+        </div>
+      </div>
+      ${
+        thirdPlace
+          ? `
+        <section class="third-place-playoff">
+          <div>
+            <p class="eyebrow">Third-place playoff</p>
+            <h4>${escapeHtml(thirdPlace.id.replace("M", "Match "))}</h4>
+          </div>
+          ${knockoutMatchCardHtml(thirdPlace, false)}
+        </section>
+      `
+          : ""
+      }
     </section>
   `;
+}
+
+function knockoutRoundColumnHtml(round, matches, roundIndex) {
+  return `
+    <section class="knockout-round-column knockout-round-${roundIndex}">
+      <div class="knockout-round-heading">
+        <span>${roundIndex + 1}</span>
+        <h4>${escapeHtml(round)}</h4>
+      </div>
+      <div class="knockout-round-matches">
+        ${matches
+          .map((match) => knockoutMatchCardHtml(match, true))
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function knockoutMatchCardHtml(match, showRoute) {
+  const result = state.results[match.id];
+  const winner = getKnockoutMatchWinner(match);
+  const resolvedHome = resolveLiveKnockoutSlot(match.home);
+  const resolvedAway = resolveLiveKnockoutSlot(match.away);
+  const penaltyTeam = result
+    ? penaltyWinnerTeam(
+        { home: resolvedHome, away: resolvedAway },
+        result.penaltyWinner,
+      )
+    : "";
+  const nextMatch = showRoute ? getNextKnockoutMatch(match.id) : null;
+  const isFinal = match.group === "Final";
+  const routeLabel = isFinal
+    ? winner
+      ? `Champion: ${winner}`
+      : "Winner becomes champion"
+    : showRoute
+      ? winner
+        ? `Winner: ${winner}`
+        : "Winner progresses"
+      : winner
+        ? `Third place: ${winner}`
+        : "Third place decided here";
+
+  return `
+    <article class="knockout-match-card${result ? " has-result" : ""}">
+      <div class="knockout-match-head">
+        <strong>${escapeHtml(match.id)}</strong>
+        <time datetime="${escapeHtml(match.kickoff)}">${formatShortDate(new Date(match.kickoff))} · ${formatTime(new Date(match.kickoff))}</time>
+      </div>
+      <div class="knockout-slots">
+        ${knockoutSlotHtml(match.home, winner === resolvedHome)}
+        <span class="knockout-score">${result ? `${result.homeScore}-${result.awayScore}` : "vs"}</span>
+        ${knockoutSlotHtml(match.away, winner === resolvedAway)}
+      </div>
+      ${
+        penaltyTeam
+          ? `<p class="knockout-penalty-note">${escapeHtml(penaltyTeam)} won on penalties</p>`
+          : ""
+      }
+      <div class="knockout-route">
+        <span class="${winner ? "knockout-winner" : ""}">${escapeHtml(routeLabel)}</span>
+        ${
+          nextMatch
+            ? `<strong aria-label="Winner advances to ${escapeHtml(nextMatch.id)}">→ ${escapeHtml(nextMatch.id)}</strong>`
+            : ""
+        }
+      </div>
+    </article>
+  `;
+}
+
+function knockoutSlotHtml(slot, isWinner) {
+  const resolvedTeam = resolveLiveKnockoutSlot(slot);
+  const pendingSource = knockoutSourceLabel(slot);
+
+  if (pendingSource && resolvedTeam === slot) {
+    const possibleTeams = getPotentialKnockoutTeams(slot);
+    const possibilitiesLabel =
+      possibleTeams.length <= 2
+        ? possibleTeams.join(" or ")
+        : `${possibleTeams.length} possible teams`;
+    return `
+      <div class="knockout-slot pending-slot">
+        <span class="path-badge">${escapeHtml(pendingSource.type)}</span>
+        <strong>${escapeHtml(pendingSource.matchId)}</strong>
+        ${
+          possibleTeams.length
+            ? `
+          <span class="knockout-possibilities mobile-tooltip-trigger" tabindex="0" aria-expanded="false">
+            ${escapeHtml(possibilitiesLabel)}
+            <span class="mobile-tooltip">${escapeHtml(possibleTeams.join(", "))}</span>
+          </span>
+        `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  return `
+    <div class="knockout-slot${isWinner ? " slot-winner" : ""}">
+      ${teamHtml(resolvedTeam, {
+        className: "knockout-team-name mobile-tooltip-trigger",
+        tooltip: true,
+      })}
+      ${isWinner ? `<span class="winner-mark">Won</span>` : ""}
+    </div>
+  `;
+}
+
+function resolveLiveKnockoutSlot(slot) {
+  const source = knockoutSourceLabel(slot);
+  if (!source) return slot;
+
+  const sourceMatch = matchesData.find((match) => match.id === source.matchId);
+  if (!sourceMatch) return slot;
+  return source.type === "Winner"
+    ? getKnockoutMatchWinner(sourceMatch) || slot
+    : getKnockoutMatchLoser(sourceMatch) || slot;
+}
+
+function knockoutSourceLabel(slot) {
+  const match = /^Match (\d+) (Winner|Loser)$/.exec(slot);
+  if (!match) return null;
+  return {
+    matchId: `M${match[1].padStart(3, "0")}`,
+    type: match[2],
+  };
+}
+
+function getPotentialKnockoutTeams(slot, visitedMatches = new Set()) {
+  const resolvedTeam = resolveLiveKnockoutSlot(slot);
+  if (resolvedTeam !== slot) return [resolvedTeam];
+
+  const source = knockoutSourceLabel(slot);
+  if (!source || visitedMatches.has(source.matchId)) {
+    return source ? [] : [slot];
+  }
+
+  const sourceMatch = matchesData.find((match) => match.id === source.matchId);
+  if (!sourceMatch) return [];
+
+  const nextVisited = new Set(visitedMatches);
+  nextVisited.add(source.matchId);
+  return [
+    ...new Set([
+      ...getPotentialKnockoutTeams(sourceMatch.home, nextVisited),
+      ...getPotentialKnockoutTeams(sourceMatch.away, nextVisited),
+    ]),
+  ];
+}
+
+function getKnockoutMatchWinner(match) {
+  const result = state.results[match.id];
+  if (!result) return "";
+  if (result.homeScore > result.awayScore)
+    return resolveLiveKnockoutSlot(match.home);
+  if (result.awayScore > result.homeScore)
+    return resolveLiveKnockoutSlot(match.away);
+  return penaltyWinnerTeam(
+    {
+      home: resolveLiveKnockoutSlot(match.home),
+      away: resolveLiveKnockoutSlot(match.away),
+    },
+    result.penaltyWinner,
+  );
+}
+
+function getKnockoutMatchLoser(match) {
+  const winner = getKnockoutMatchWinner(match);
+  if (!winner) return "";
+  const home = resolveLiveKnockoutSlot(match.home);
+  const away = resolveLiveKnockoutSlot(match.away);
+  return winner === home ? away : home;
+}
+
+function getNextKnockoutMatch(matchId) {
+  const matchNumber = String(Number(matchId.slice(1)));
+  const sourceLabel = `Match ${matchNumber} Winner`;
+  return MATCHES.find(
+    (match) => match.home === sourceLabel || match.away === sourceLabel,
+  );
 }
 
 function allMatchesHtml() {
