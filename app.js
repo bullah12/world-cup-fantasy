@@ -1430,7 +1430,13 @@ async function loadSupabaseState() {
   ] = await Promise.all([
       supabaseSelect("players"),
       supabaseSelect("matches"),
-      supabaseSelect("predictions"),
+      supabaseSelect("predictions", {
+        orders: [
+          { column: "updated_at", ascending: false },
+          { column: "player_id", ascending: true },
+          { column: "match_id", ascending: true },
+        ],
+      }),
       supabaseSelect("results"),
       supabaseSelect("app_settings"),
       supabaseSelect("match_predictions"),
@@ -1588,17 +1594,37 @@ async function deleteStaleSupabaseMatches() {
   }
 }
 
-async function supabaseSelect(table) {
+async function supabaseSelect(table, options = {}) {
   if (!supabaseClient) return [];
 
-  const { data, error } = await supabaseClient.from(table).select("*");
+  const pageSize = 1000;
+  const rows = [];
+  let page = 0;
 
-  if (error) {
-    console.error(`Error loading ${table}:`, error);
-    return [];
+  while (true) {
+    const from = page * pageSize;
+    let query = supabaseClient
+      .from(table)
+      .select("*")
+      .range(from, from + pageSize - 1);
+
+    (options.orders || []).forEach((order) => {
+      query = query.order(order.column, {
+        ascending: order.ascending !== false,
+      });
+    });
+
+    const { data, error } = await query;
+    if (error) {
+      console.error(`Error loading ${table} page ${page + 1}:`, error);
+      return rows;
+    }
+
+    const pageRows = data || [];
+    rows.push(...pageRows);
+    if (pageRows.length < pageSize) return rows;
+    page += 1;
   }
-
-  return data || [];
 }
 
 async function supabaseUpsert(table, payload, options = {}) {
