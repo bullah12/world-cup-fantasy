@@ -49,7 +49,7 @@
       <section class="hero-grid">
         <div>
           <p class="eyebrow">Family and friends World Cup fantasy</p>
-          <h1>Welcome to Fantasy World Cup 2026.</h1>
+          <h1>Welcome to Fantasy World Cup 2026</h1>
           <p class="intro">
             Create your player, predict match scores, and climb the family
             leaderboard. Get your winners right, chase perfect scores, and stay
@@ -464,6 +464,13 @@
               <button
                 class="admin-section-tab"
                 type="button"
+                data-admin-section="predictions"
+              >
+                Predictions
+              </button>
+              <button
+                class="admin-section-tab"
+                type="button"
                 data-admin-section="parameters"
               >
                 Parameters
@@ -497,6 +504,73 @@
                 recalculates automatically.
               </p>
               <div id="results-admin" class="admin-list"></div>
+            </section>
+
+            <section class="panel admin-panel" data-admin-panel="predictions">
+              <div class="section-head small">
+                <div>
+                  <p class="eyebrow">Player score editor</p>
+                  <h2>Edit predictions</h2>
+                </div>
+                <span class="pill">Autosaves</span>
+              </div>
+              <p class="muted">
+                Select a player and match. Existing predictions will be loaded;
+                new ones will be inserted automatically.
+              </p>
+              <div class="admin-prediction-selectors">
+                <label for="admin-prediction-player">
+                  Player
+                  <select id="admin-prediction-player"></select>
+                </label>
+                <label for="admin-prediction-match">
+                  Match
+                  <select id="admin-prediction-match"></select>
+                </label>
+              </div>
+              <div
+                id="admin-prediction-match-preview"
+                class="admin-prediction-match-preview"
+              ></div>
+              <form
+                id="admin-prediction-form"
+                class="admin-prediction-form"
+              >
+                <label>
+                  <span id="admin-prediction-home-label">Home score</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    name="homeScore"
+                    inputmode="numeric"
+                  />
+                </label>
+                <span class="admin-prediction-divider">-</span>
+                <label>
+                  <span id="admin-prediction-away-label">Away score</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    name="awayScore"
+                    inputmode="numeric"
+                  />
+                </label>
+                <label
+                  id="admin-prediction-penalty-field"
+                  class="admin-prediction-penalty"
+                  hidden
+                >
+                  Winner on penalties, if needed
+                  <select name="penaltyWinner"></select>
+                </label>
+              </form>
+              <p
+                id="admin-prediction-status"
+                class="admin-prediction-status muted"
+                aria-live="polite"
+              ></p>
             </section>
 
             <section class="panel admin-panel" data-admin-panel="parameters">

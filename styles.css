@@ -2065,6 +2065,88 @@ th {
   text-align: right;
 }
 
+.admin-prediction-selectors {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.admin-prediction-match-preview {
+  background: #f8faf6;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+}
+
+.admin-prediction-preview-meta,
+.admin-prediction-preview-fixture {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.admin-prediction-preview-meta .muted {
+  margin-top: 0.15rem;
+}
+
+.admin-prediction-preview-fixture {
+  flex-wrap: wrap;
+  font-size: 1.05rem;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.admin-prediction-preview-fixture > span:not(.team-name) {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.admin-prediction-form {
+  align-items: end;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  margin-top: 0.85rem;
+}
+
+.admin-prediction-form input {
+  font-size: 1.1rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.admin-prediction-form label > span {
+  display: block;
+  margin-bottom: 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-prediction-divider {
+  font-size: 1.15rem;
+  font-weight: 900;
+  padding-bottom: 0.65rem;
+}
+
+.admin-prediction-penalty {
+  grid-column: 1 / -1;
+}
+
+.admin-prediction-penalty[hidden] {
+  display: none;
+}
+
+.admin-prediction-status {
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-top: 0.65rem;
+}
+
 .config-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -3917,6 +3999,18 @@ td {
 
   .site-footer {
     padding-bottom: 2rem;
+  }
+
+  .admin-prediction-selectors {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-prediction-form {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .admin-prediction-preview-meta {
+    align-items: flex-start;
   }
 
   .knockout-stage-head {

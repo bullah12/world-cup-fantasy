@@ -935,6 +935,9 @@ let knockoutMobileLayout = "list";
 let leaderboardScope = DEFAULT_LEAGUE_ID;
 let selectedModelVersion = "";
 let selectedAdminSection = "results";
+let adminPredictionPlayerId = "";
+let adminPredictionMatchId = "";
+let adminPredictionFeedback = "";
 let allMatchesTeamFilter = "";
 let allMatchesGroupFilter = "";
 
@@ -990,6 +993,22 @@ const els = {
     "#tournament-predictions-close",
   ),
   resultsAdmin: document.querySelector("#results-admin"),
+  adminPredictionPlayer: document.querySelector("#admin-prediction-player"),
+  adminPredictionMatch: document.querySelector("#admin-prediction-match"),
+  adminPredictionMatchPreview: document.querySelector(
+    "#admin-prediction-match-preview",
+  ),
+  adminPredictionForm: document.querySelector("#admin-prediction-form"),
+  adminPredictionHomeLabel: document.querySelector(
+    "#admin-prediction-home-label",
+  ),
+  adminPredictionAwayLabel: document.querySelector(
+    "#admin-prediction-away-label",
+  ),
+  adminPredictionPenaltyField: document.querySelector(
+    "#admin-prediction-penalty-field",
+  ),
+  adminPredictionStatus: document.querySelector("#admin-prediction-status"),
   scoringConfig: document.querySelector("#scoring-config"),
   saveConfig: document.querySelector("#save-config"),
   viewControls: document.querySelectorAll("[data-view-target]"),
@@ -1135,6 +1154,26 @@ els.adminSectionTabs.forEach((tab) => {
     renderAdminSections();
   });
 });
+
+els.adminPredictionPlayer.addEventListener("change", () => {
+  adminPredictionPlayerId = els.adminPredictionPlayer.value;
+  adminPredictionFeedback = "";
+  renderAdminPredictionEditor();
+});
+
+els.adminPredictionMatch.addEventListener("change", () => {
+  adminPredictionMatchId = els.adminPredictionMatch.value;
+  adminPredictionFeedback = "";
+  renderAdminPredictionEditor();
+});
+
+els.adminPredictionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+});
+els.adminPredictionForm.addEventListener(
+  "input",
+  handleAdminPredictionInput,
+);
 
 els.leaderboardScopeTabs.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-leaderboard-scope]");
@@ -1669,7 +1708,7 @@ async function saveLeagues() {
 }
 
 async function savePrediction(prediction) {
-  if (!supabaseClient) return;
+  if (!supabaseClient) return false;
   await supabaseUpsert("predictions", {
     player_id: prediction.playerId,
     match_id: prediction.matchId,
@@ -1678,7 +1717,7 @@ async function savePrediction(prediction) {
     penalty_winner: prediction.penaltyWinner || null,
     updated_at: prediction.updatedAt,
   });
-  await savePredictionHistory({
+  return savePredictionHistory({
     ...prediction,
     action: "save",
   });
@@ -1717,7 +1756,7 @@ async function saveTournamentPrediction(prediction) {
 }
 
 async function savePredictionHistory(prediction) {
-  if (!supabaseClient) return;
+  if (!supabaseClient) return false;
   const historyKey = `${prediction.playerId}:${prediction.matchId}:${prediction.action}`;
   const savedAt = new Date(prediction.updatedAt).getTime();
   const lastSavedAt = recentPredictionHistoryWrites.get(historyKey) || 0;
@@ -1725,7 +1764,7 @@ async function savePredictionHistory(prediction) {
     Number.isFinite(savedAt) &&
     savedAt - lastSavedAt < HISTORY_MIN_SAVE_INTERVAL_MS
   ) {
-    return;
+    return false;
   }
 
   recentPredictionHistoryWrites.set(
@@ -1747,7 +1786,9 @@ async function savePredictionHistory(prediction) {
       "Could not save prediction history. Add prediction_history in Supabase if you want full history.",
       error,
     );
+    return false;
   }
+  return true;
 }
 
 async function saveResult(result) {
@@ -2122,6 +2163,7 @@ function render() {
   renderAdminAccess();
   renderAdminSections();
   renderResultsAdmin();
+  renderAdminPredictionEditor();
   renderConfig();
   renderLeaguesAdmin();
   renderUsersAdmin();
@@ -4256,6 +4298,193 @@ async function saveAdminResultForm(form) {
   status.textContent = "Saved";
   renderLeaderboard();
   renderPlayerPredictions();
+}
+
+function renderAdminPredictionEditor() {
+  if (!adminUnlocked) return;
+
+  clearTimeout(els.adminPredictionForm.saveTimer);
+  const players = Object.values(state.players).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  const matches = [...matchesData].sort(
+    (a, b) => Number(b.id.slice(1)) - Number(a.id.slice(1)),
+  );
+
+  if (
+    !adminPredictionPlayerId ||
+    !state.players[adminPredictionPlayerId]
+  ) {
+    adminPredictionPlayerId =
+      (activePlayerId && state.players[activePlayerId]
+        ? activePlayerId
+        : players[0]?.id) || "";
+  }
+  if (
+    !adminPredictionMatchId ||
+    !matches.some((match) => match.id === adminPredictionMatchId)
+  ) {
+    adminPredictionMatchId = getClosestAdminMatchId(matches);
+  }
+
+  els.adminPredictionPlayer.innerHTML = players
+    .map(
+      (player) =>
+        `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} (${escapeHtml(player.id)})</option>`,
+    )
+    .join("");
+  els.adminPredictionPlayer.value = adminPredictionPlayerId;
+
+  els.adminPredictionMatch.innerHTML = matches
+    .map(
+      (match) =>
+        `<option value="${escapeHtml(match.id)}">${escapeHtml(match.id)} - ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</option>`,
+    )
+    .join("");
+  els.adminPredictionMatch.value = adminPredictionMatchId;
+
+  const match = matchesData.find(
+    (item) => item.id === adminPredictionMatchId,
+  );
+  const player = state.players[adminPredictionPlayerId];
+  const form = els.adminPredictionForm;
+  const disabled = !match || !player;
+  els.adminPredictionPlayer.disabled = players.length === 0;
+  els.adminPredictionMatch.disabled = matches.length === 0;
+  Array.from(form.elements).forEach((control) => {
+    control.disabled = disabled;
+  });
+
+  if (disabled) {
+    els.adminPredictionMatchPreview.innerHTML =
+      `<p class="muted">Add a player and match before editing predictions.</p>`;
+    form.reset();
+    els.adminPredictionStatus.textContent = "";
+    return;
+  }
+
+  const prediction = getPrediction(player.id, match.id);
+  els.adminPredictionMatchPreview.innerHTML = `
+    <div class="admin-prediction-preview-meta">
+      <span class="pill">${escapeHtml(match.id)}</span>
+      <div>
+        <strong>${escapeHtml(match.group)}</strong>
+        <p class="muted">${formatDate(new Date(match.kickoff))} at ${formatTime(new Date(match.kickoff))}</p>
+      </div>
+    </div>
+    <div class="admin-prediction-preview-fixture">
+      ${teamHtml(match.home, {
+        className: "mobile-tooltip-trigger",
+        tooltip: true,
+      })}
+      <span>vs</span>
+      ${teamHtml(match.away, {
+        className: "mobile-tooltip-trigger",
+        tooltip: true,
+      })}
+    </div>
+    <p class="muted">${escapeHtml(match.venue)}</p>
+  `;
+
+  els.adminPredictionHomeLabel.textContent = match.home;
+  els.adminPredictionAwayLabel.textContent = match.away;
+  form.elements.homeScore.value = prediction?.homeScore ?? "";
+  form.elements.awayScore.value = prediction?.awayScore ?? "";
+
+  const showPenaltyWinner = isKnockoutMatch(match);
+  els.adminPredictionPenaltyField.hidden = !showPenaltyWinner;
+  form.elements.penaltyWinner.innerHTML = `
+    <option value="">No penalty pick</option>
+    <option value="HOME">${escapeHtml(match.home)}</option>
+    <option value="AWAY">${escapeHtml(match.away)}</option>
+  `;
+  form.elements.penaltyWinner.value = prediction?.penaltyWinner || "";
+  form.elements.penaltyWinner.disabled = !showPenaltyWinner;
+
+  els.adminPredictionStatus.textContent =
+    adminPredictionFeedback ||
+    (prediction
+      ? `Existing prediction loaded for ${player.name}.`
+      : `No prediction exists for ${player.name}. Enter both scores to create one.`);
+}
+
+function getClosestAdminMatchId(matches) {
+  const now = Date.now();
+  return (
+    [...matches].sort(
+      (a, b) =>
+        Math.abs(new Date(a.kickoff).getTime() - now) -
+        Math.abs(new Date(b.kickoff).getTime() - now),
+    )[0]?.id || ""
+  );
+}
+
+function handleAdminPredictionInput(event) {
+  const form = event.currentTarget;
+  const homeValue = form.elements.homeScore.value;
+  const awayValue = form.elements.awayScore.value;
+  clearTimeout(form.saveTimer);
+
+  if (homeValue === "" || awayValue === "") {
+    adminPredictionFeedback =
+      homeValue === "" && awayValue === ""
+        ? "Enter both scores."
+        : "Enter the other score to save.";
+    els.adminPredictionStatus.textContent = adminPredictionFeedback;
+    return;
+  }
+
+  adminPredictionFeedback = "Saving prediction...";
+  els.adminPredictionStatus.textContent = adminPredictionFeedback;
+  form.saveTimer = setTimeout(() => {
+    saveAdminPredictionForm(form).catch((error) => {
+      console.error(error);
+      adminPredictionFeedback = error.message || "Could not save prediction.";
+      els.adminPredictionStatus.textContent = adminPredictionFeedback;
+    });
+  }, SCORE_SAVE_DEBOUNCE_MS);
+}
+
+async function saveAdminPredictionForm(form) {
+  const playerId = els.adminPredictionPlayer.value;
+  const matchId = els.adminPredictionMatch.value;
+  const match = matchesData.find((item) => item.id === matchId);
+  if (!playerId || !match) return;
+
+  const homeScore = Number(form.elements.homeScore.value);
+  const awayScore = Number(form.elements.awayScore.value);
+  if (
+    !Number.isInteger(homeScore) ||
+    homeScore < 0 ||
+    !Number.isInteger(awayScore) ||
+    awayScore < 0
+  ) {
+    adminPredictionFeedback = "Enter valid whole-number scores.";
+    els.adminPredictionStatus.textContent = adminPredictionFeedback;
+    return;
+  }
+
+  const existed = Boolean(getPrediction(playerId, matchId));
+  const prediction = {
+    playerId,
+    matchId,
+    homeScore,
+    awayScore,
+    penaltyWinner: isKnockoutMatch(match)
+      ? form.elements.penaltyWinner.value
+      : "",
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.predictions[predictionKey(playerId, matchId)] = prediction;
+  const historyRecorded = await savePrediction(prediction);
+  saveState();
+
+  adminPredictionFeedback = `${existed ? "Updated" : "Created"} ${match.id} prediction for ${state.players[playerId]?.name || playerId}.${historyRecorded ? " History recorded." : " Prediction saved, but history was not recorded."}`;
+  els.adminPredictionStatus.textContent = adminPredictionFeedback;
+  renderLeaderboard();
+  renderPlayerPredictions();
+  renderUsersAdmin();
 }
 
 function renderConfig() {
