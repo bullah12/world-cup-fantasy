@@ -2,3 +2,9 @@
 .venv
 wrangler.score-sync.toml
 .dev.vars
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
