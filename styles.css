@@ -342,23 +342,6 @@ h1 {
   max-width: 780px;
 }
 
-.title-host-flags {
-  display: inline-flex;
-  gap: 0.12em;
-  margin-left: 0.12em;
-  vertical-align: 0.08em;
-  white-space: nowrap;
-}
-
-.title-host-flags img {
-  border: 1px solid rgba(255, 255, 255, 0.48);
-  border-radius: 3px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
-  height: 0.48em;
-  object-fit: cover;
-  width: 0.72em;
-}
-
 h2 {
   font-size: 1.45rem;
 }
